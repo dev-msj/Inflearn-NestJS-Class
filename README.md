@@ -1,73 +1,100 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# NestJS를 왜 사용해야 하는가?
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## 각 엔진별 Route Handler 코드를 확인해보자.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+### NodeJS
 
-## Description
+``` javascript
+const http = require('http');
+const url = require('url');
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+const host = 'localhost';
+const port = 3000;
 
-## Installation
+http.createServer((req, res) => {
+  if (path === '/') {
+    res.writeHead(200, { 'Content-type', 'text/html' });
+    res.end('<h1>Home Page!<h1>');
+   } else if (path === '/posts') {
+    res.writeHead(200, { 'Content-type', 'text/html' });
+    res.end('<h1>Post Page!<h1>');
+   } else if (path === '/users') {
+    res.writeHead(200, { 'Content-type', 'text/html' });
+    res.end('<h1>User Page!<h1>');
+   } else {
+    res.writeHead(404, { 'Content-type', 'text/html' });
+    res.end('<h1>404 Page Not Found!<h1>');
+   }
+});
 
-```bash
-$ yarn install
+server.listen(port, host, () => {
+  console.log('server running on http://localhost:3000');
+})
 ```
 
-## Running the app
+### Express
 
-```bash
-# development
-$ yarn run start
+```javascript
+const express = require('express');
 
-# watch mode
-$ yarn run start:dev
+const app = express();
 
-# production mode
-$ yarn run start:prod
+app.get('/', (req, res) => {
+  res.send('<h1>Home Page!</h1>');
+});
+
+app.get('/posts', (req, res) => {
+  res.send('<h1>Post Page!</h1>');
+});
+
+app.get('/users', (req, res) => {
+  res.send('<h1>User Page!</h1>');
+});
+
+app.use((req, res) => {
+  res.status(404).send('<h1>404 Page Not Found!</h1>');
+});
+
+app.listen(port, host, () => {
+  console.log('server running on http://localhost:3000');
+})
 ```
 
-## Test
+### NestJS
 
-```bash
-# unit tests
-$ yarn run test
+```typescript
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
 
-# e2e tests
-$ yarn run test:e2e
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
 
-# test coverage
-$ yarn run test:cov
+  @Get()
+  public getHome(): string {
+    return 'Home Page!';
+  }
+
+  @Get('posts')
+  public getPost(): string {
+    return 'Post Page!';
+  }
+
+  @Get('users')
+  public getUser(): string {
+    return 'User Page!';
+  }
+}
 ```
 
-## Support
+### 각 엔진별 코드의 차이점은 무엇인가?
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+* NodeJS: V8 엔진으로 엔진으로 빌드된 JS 런타임 환경이다. 순수하게 NodeJS만을 활용해 route handler를 구현해 보면, 위에 작성된 코드와 같이 `if`문으로 path마다 분기 처리하여 관련 요청을 수행하는 코드를 작성하게 된다. 하지만 이러한 코드는 가독성이나 확장성 등이 매우 떨어진다.
 
-## Stay in touch
+* Express: NodeJS를 기반으로 웹 서버를 쉽게 작성할 수 있도록 하는 경량화된 프레임워크다. 이를 활용하면 훨씬 더 수월하게 route handler를 구현할 수 있다. <br>하지만 아키텍쳐 구성과 모든 기능들을 직접 구현해야 하며, 관련 패지키들을 직접 다 찾아서 설치해줘야 한다는 문제가 있다.
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+* NestJS: Controller를 기반으로 route handler를 구현한다. `호출된 route handler가 요청을 수행하고 결과값을 반환`하는 형식을 사용하므로 콜백 형태를 사용하는 Express보다 더 친국하게 느껴진다. 또한 프레임워크에서 웹 서버 구현에 필요한 기본적인 패키지들과 `controller/provider/module`을 활용한 아키텍쳐를 제공한다. 이를 통해 쉽게 테스트하고, 쉽게 확장이 가능하고, 각 모듈 간의 의존성이 분리된 웹 서버를 만들 수 있도록 도와준다.
 
-## License
+### 정리
 
-Nest is [MIT licensed](LICENSE).
+Express를 활용하게 되면 컨트롤러를 어디에 둘지, 서비스를 어디에 둘지, 미들웨어를 어떤 식으로 작성할지 등을 개발자가 고민하며 구현해야 한다. 그리고 결국에는 Express로 잘 짜여진 아키텍쳐로 구성된 웹 서버를 만든다면, 그게 바로 NestJS가 된다.
