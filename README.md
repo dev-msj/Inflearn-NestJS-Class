@@ -1,6 +1,6 @@
 # NestJS를 왜 사용해야 하는가?
 
-## 각 엔진별 Route Handler 코드를 확인해보자.
+## NodeJS, Express, NestJS로 구현된 Route Handler를 구현해보자.
 
 ### NodeJS
 
@@ -87,13 +87,13 @@ export class AppController {
 }
 ```
 
-## 각 엔진별 코드의 차이점은 무엇인가?
+## 각 환경별 차이점은 무엇인가?
 
 * NodeJS: V8 엔진으로 엔진으로 빌드된 JS 런타임 환경이다. 순수하게 NodeJS만을 활용해 route handler를 구현해 보면, 위에 작성된 코드와 같이 `if`문으로 path마다 분기 처리하여 관련 요청을 수행하는 코드를 작성하게 된다. 하지만 이러한 코드는 가독성이나 확장성 등이 매우 떨어진다.
 
 * Express: NodeJS를 기반으로 웹 서버를 쉽게 작성할 수 있도록 하는 경량화된 프레임워크다. 이를 활용하면 훨씬 더 수월하게 route handler를 구현할 수 있다. <br>하지만 아키텍쳐 구성과 모든 기능들을 직접 구현해야 하며, 관련 패지키들을 직접 다 찾아서 설치해줘야 한다는 문제가 있다.
 
-* NestJS: Controller를 기반으로 route handler를 구현한다. `호출된 route handler가 요청을 수행하고 결과값을 반환`하는 형식을 사용하므로 콜백 형태를 사용하는 Express보다 더 친국하게 느껴진다. 또한 프레임워크에서 웹 서버 구현에 필요한 기본적인 패키지들과 `controller/provider/module`을 활용한 아키텍쳐를 제공한다. 이를 통해 쉽게 테스트하고, 쉽게 확장이 가능하고, 각 모듈 간의 의존성이 분리된 웹 서버를 만들 수 있도록 도와준다.
+* NestJS: Controller를 기반으로 route handler를 구현한다. `호출된 route handler가 요청을 수행하고 결과값을 반환`하는 형식을 사용하므로 콜백 형태를 사용하는 Express보다 더 친숙하게 느껴진다. 또한 프레임워크에서 웹 서버 구현에 필요한 기본적인 패키지들과 `controller/provider/module`을 활용한 아키텍쳐를 제공한다. 이를 통해 쉽게 테스트하고, 쉽게 확장이 가능하고, 각 모듈 간의 의존성이 분리된 웹 서버를 만들 수 있도록 도와준다.
 
 ## 정리
 
