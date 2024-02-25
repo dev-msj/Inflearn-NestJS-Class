@@ -41,7 +41,7 @@ let mockPostList: PostModel[] = [
     id: 3,
     author: 'newjeans_official',
     title: '뉴진스 민지',
-    content: '춤 연습 중인 하니',
+    content: '춤 연습 중인 민지',
     likeCount: 10000000,
     commentCount: 9999999,
   },
