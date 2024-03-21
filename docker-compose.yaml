@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    volumes: # volumes를 사용하여 컨테이너의 경로와 실제 컴퓨터의 경로를 연결하여 데이터를 저장한다.
+      # '-'를 사용하는 이유는 여러 개를 입력할 수 있기 때문이다.
+      # ':'을 기준으로 왼쪽은 실제 컴퓨터의 경로, 오른쪽은 컨테이너의 경로이다.
+      - ./postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # 컨테이너의 5432번 포트를 컴퓨터의 5432번 포트로 연결한다.
+    environment: # 환경 변수를 설정한다.
+      POSTGRES_USER: alex
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+
+# 보통은 실행시킬 때 docker-compose 명령어를 사용하는데, 해당 커맨드가 안 먹힐 경우 'docker compose' 명령어를 입력하면 된다.
+# docker-compose up
+# docker compose up
