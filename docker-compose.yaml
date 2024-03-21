@@ -1,3 +1,7 @@
+# 보통 production 환경에서는 kubernetes를 활용해 여러 개의 컨터이너를 관리한다.
+# 하지만 로컬 환경에서 개발할 때는 보통 docker-compose를 활용한다.
+# 즉, docker-compose.yaml 파일을 작성하여 원하는만큼의 컨테이너들을 생성하고 관리할 수 있다.
+
 services:
   postgres:
     image: postgres:latest
