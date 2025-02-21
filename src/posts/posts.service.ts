@@ -134,7 +134,7 @@ export class PostsService {
     return mockPost;
   }
 
-  public deletePostModelById(id: number) {
+  public deletePostModelById(id: number): number {
     const mockPost = mockPostList.find((mockPost) => mockPost.id === id);
 
     if (!mockPost) {

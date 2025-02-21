@@ -46,7 +46,7 @@ export class PostsController {
     @Body('author') author: string,
     @Body('title') title: string,
     @Body('content') content: string,
-  ) {
+  ): PostModel {
     return this.postsService.createPostModel(author, title, content);
   }
 
@@ -61,7 +61,7 @@ export class PostsController {
     @Body('author') author?: string,
     @Body('title') title?: string,
     @Body('content') content?: string,
-  ) {
+  ): PostModel {
     return this.postsService.updatePostModel(+id, author, title, content);
   }
 
@@ -76,7 +76,7 @@ export class PostsController {
     @Body('author') author: string,
     @Body('title') title: string,
     @Body('content') content: string,
-  ) {
+  ): PostModel {
     return this.postsService.upsertPostModel(+id, author, title, content);
   }
 
@@ -86,7 +86,7 @@ export class PostsController {
    * - store에서 요청된 resource를 삭제한다.
    */
   @Delete(':id')
-  public deletePost(@Param('id') id: string) {
+  public deletePost(@Param('id') id: string): number {
     return this.postsService.deletePostModelById(+id);
   }
 }
