@@ -1,40 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-
-export interface PostModel {
-  id: number;
-  author: string;
-  title: string;
-  content: string;
-  likeCount: number;
-  commentCount: number;
-}
-
-let mockPostList: PostModel[] = [
-  {
-    id: 1,
-    author: 'newjeans_official',
-    title: '뉴진스 해린',
-    content: '메이크업 고치고 있는 해린',
-    likeCount: 10000000,
-    commentCount: 9999999,
-  },
-  {
-    id: 2,
-    author: 'newjeans_official',
-    title: '뉴진스 하니',
-    content: '노래 연습 중인 하니',
-    likeCount: 10000000,
-    commentCount: 9999999,
-  },
-  {
-    id: 3,
-    author: 'newjeans_official',
-    title: '뉴진스 민지',
-    content: '춤 연습 중인 민지',
-    likeCount: 10000000,
-    commentCount: 9999999,
-  },
-];
+import { InjectRepository } from '@nestjs/typeorm';
+import { PostModel } from 'src/entities/posts.entity';
+import { Repository } from 'typeorm';
 
 /**
  * NestJS는 크게 Controller, Provider, Module 3가지 형태로 구성되어 있다.
@@ -44,105 +11,113 @@ let mockPostList: PostModel[] = [
  */
 @Injectable()
 export class PostsService {
-  public getAllPostModels(): PostModel[] {
-    return mockPostList;
+  constructor(
+    // PostModel을 다루는 Repository를 TypeORM으로부터 주입받는다.
+    @InjectRepository(PostModel)
+    private readonly postsRepository: Repository<PostModel>,
+  ) {}
+
+  public async getAllPostModels(): Promise<PostModel[]> {
+    return await this.postsRepository.find();
   }
 
-  public getPostModelById(id: number): PostModel {
-    const mockPost = mockPostList.find((mockPost) => mockPost.id === id);
+  public async getPostModelById(id: number): Promise<PostModel> {
+    // id에 해당하는 PostModel을 찾아 반환한다.
+    const post = await this.postsRepository.findOne({
+      where: {
+        id,
+      },
+    });
 
-    if (!mockPost) {
+    if (!post) {
       throw new NotFoundException();
     }
 
-    return mockPost;
+    return post;
   }
 
-  public createPostModel(
+  public async createPostModel(
     author: string,
     title: string,
     content: string,
-  ): PostModel {
-    const postModel: PostModel = {
-      id: mockPostList[mockPostList.length - 1].id + 1,
+  ): Promise<PostModel> {
+    // 1) create -> 저장할 객체를 생성한다.
+    // 2) save -> 객체를 저장한다. (create 메서드에서 생성한 객체로)
+
+    // 서버에서 생성된 PostModel로 id값이 생성되지 않는다.
+    const post = this.postsRepository.create({
       author,
       title,
       content,
       likeCount: 0,
       commentCount: 0,
-    };
+    });
 
-    mockPostList = [...mockPostList, postModel];
-
-    return postModel;
+    // DB에 실제로 저장된 결과값을 반환한다. (DB에서 auto-increment된 id값이 생성된다.)
+    return await this.postsRepository.save(post);
   }
 
-  public updatePostModel(
+  public async updatePostModel(
     id: number,
     author: string,
     title: string,
     content: string,
-  ): PostModel {
-    const mockPost = mockPostList.find((mockPost) => mockPost.id === +id);
-
-    if (!mockPost) {
-      throw new NotFoundException();
-    }
+  ): Promise<void> {
+    const updateData = {};
 
     if (author) {
-      mockPost.author = author;
+      updateData['author'] = author;
     }
 
     if (title) {
-      mockPost.title = title;
+      updateData['title'] = title;
     }
 
     if (content) {
-      mockPost.content = content;
+      updateData['content'] = content;
     }
 
-    return mockPost;
+    // id에 해당하는 PostModel을 업데이트한다.
+    await this.postsRepository.update(id, updateData);
   }
 
-  public upsertPostModel(
+  public async upsertPostModel(
     id: number,
     author: string,
     title: string,
     content: string,
-  ): PostModel {
-    const mockPost = mockPostList.find((mockPost) => mockPost.id === +id);
+  ): Promise<PostModel> {
+    // save의 기능
+    // 1) 만약에 데이터가 존재하지 않는다면 (id 기준으로) 새로 생성한다.
+    // 2) 만약에 데이터가 존재한다면 (같은 id의 값이 존재한다면) 존재하던 값을 업데이트 한다.
 
-    if (!mockPost) {
-      const post: PostModel = {
-        id: mockPostList[mockPostList.length - 1].id + 1,
-        author,
-        title,
-        content,
-        likeCount: 0,
-        commentCount: 0,
-      };
+    const post = await this.getPostModelById(id);
 
-      mockPostList = [...mockPostList, post];
-
-      return post;
+    if (author) {
+      post.author = author;
     }
 
-    mockPost.author = author;
-    mockPost.title = title;
-    mockPost.content = content;
+    if (title) {
+      post.title = title;
+    }
 
-    return mockPost;
+    if (content) {
+      post.content = content;
+    }
+
+    // id에 해당하는 PostModel을 업데이트한다.
+    return await this.postsRepository.save(post);
   }
 
-  public deletePostModelById(id: number): number {
-    const mockPost = mockPostList.find((mockPost) => mockPost.id === id);
+  public async deletePostModelById(id: number): Promise<number> {
+    const post = await this.getPostModelById(id);
 
-    if (!mockPost) {
+    if (!post) {
       throw new NotFoundException();
     }
 
-    mockPostList = mockPostList.filter((mockPost) => mockPost.id !== +id);
+    await this.postsRepository.delete(post.id);
 
-    return id;
+    return post.id;
   }
 }

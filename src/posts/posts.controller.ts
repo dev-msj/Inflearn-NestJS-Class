@@ -8,7 +8,8 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { PostModel, PostsService } from './posts.service';
+import { PostsService } from './posts.service';
+import { PostModel } from 'src/entities/posts.entity';
 
 @Controller('posts')
 export class PostsController {
@@ -21,8 +22,8 @@ export class PostsController {
    * - store는 복수형 명사로 작성한다.
    */
   @Get()
-  public getPostModels(): PostModel[] {
-    return this.postsService.getAllPostModels();
+  public async getPostModels(): Promise<PostModel[]> {
+    return await this.postsService.getAllPostModels();
   }
 
   /**
@@ -32,8 +33,9 @@ export class PostsController {
    * - resource는 단수형 명사로 작성한다.
    */
   @Get(':id')
-  public getPostModel(@Param('id') id: string): PostModel {
-    return this.postsService.getPostModelById(+id);
+  public async getPostModel(@Param('id') id: string): Promise<PostModel> {
+    // +id를 통해 string 타입의 id를 number 타입으로 변환한다.
+    return await this.postsService.getPostModelById(+id);
   }
 
   /**
@@ -42,12 +44,12 @@ export class PostsController {
    * - store에 새로운 resource를 생성한다.
    */
   @Post()
-  public postPostModel(
+  public async postPostModel(
     @Body('author') author: string,
     @Body('title') title: string,
     @Body('content') content: string,
-  ): PostModel {
-    return this.postsService.createPostModel(author, title, content);
+  ): Promise<PostModel> {
+    return await this.postsService.createPostModel(author, title, content);
   }
 
   /**
@@ -56,13 +58,15 @@ export class PostsController {
    * - store에서 요청된 resource를 수정한다.
    */
   @Patch(':id')
-  public patchPost(
+  public async patchPost(
     @Param('id') id: string,
     @Body('author') author?: string,
     @Body('title') title?: string,
     @Body('content') content?: string,
-  ): PostModel {
-    return this.postsService.updatePostModel(+id, author, title, content);
+  ): Promise<boolean> {
+    await this.postsService.updatePostModel(+id, author, title, content);
+
+    return true;
   }
 
   /**
@@ -71,13 +75,13 @@ export class PostsController {
    * - store에서 요청된 resource를 수정하거나 생성한다.
    */
   @Put(':id')
-  public putPost(
+  public async putPost(
     @Param('id') id: string,
     @Body('author') author: string,
     @Body('title') title: string,
     @Body('content') content: string,
-  ): PostModel {
-    return this.postsService.upsertPostModel(+id, author, title, content);
+  ): Promise<PostModel> {
+    return await this.postsService.upsertPostModel(+id, author, title, content);
   }
 
   /**
@@ -86,7 +90,7 @@ export class PostsController {
    * - store에서 요청된 resource를 삭제한다.
    */
   @Delete(':id')
-  public deletePost(@Param('id') id: string): number {
-    return this.postsService.deletePostModelById(+id);
+  public async deletePost(@Param('id') id: string): Promise<number> {
+    return await this.postsService.deletePostModelById(+id);
   }
 }
