@@ -9,7 +9,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
-import { PostModel } from 'src/entities/posts.entity';
+import { PostsModel } from './entities/posts.entity';
 
 @Controller('posts')
 export class PostsController {
@@ -22,7 +22,7 @@ export class PostsController {
    * - store는 복수형 명사로 작성한다.
    */
   @Get()
-  public async getPostModels(): Promise<PostModel[]> {
+  public async getPostModels(): Promise<PostsModel[]> {
     return await this.postsService.getAllPostModels();
   }
 
@@ -33,7 +33,7 @@ export class PostsController {
    * - resource는 단수형 명사로 작성한다.
    */
   @Get(':id')
-  public async getPostModel(@Param('id') id: string): Promise<PostModel> {
+  public async getPostModel(@Param('id') id: string): Promise<PostsModel> {
     // +id를 통해 string 타입의 id를 number 타입으로 변환한다.
     return await this.postsService.getPostModelById(+id);
   }
@@ -45,11 +45,11 @@ export class PostsController {
    */
   @Post()
   public async postPostModel(
-    @Body('author') author: string,
+    @Body('authorId') authorId: number,
     @Body('title') title: string,
     @Body('content') content: string,
-  ): Promise<PostModel> {
-    return await this.postsService.createPostModel(author, title, content);
+  ): Promise<PostsModel> {
+    return await this.postsService.createPostModel(authorId, title, content);
   }
 
   /**
@@ -60,11 +60,10 @@ export class PostsController {
   @Patch(':id')
   public async patchPost(
     @Param('id') id: string,
-    @Body('author') author?: string,
     @Body('title') title?: string,
     @Body('content') content?: string,
   ): Promise<boolean> {
-    await this.postsService.updatePostModel(+id, author, title, content);
+    await this.postsService.updatePostModel(+id, title, content);
 
     return true;
   }
@@ -77,11 +76,10 @@ export class PostsController {
   @Put(':id')
   public async putPost(
     @Param('id') id: string,
-    @Body('author') author: string,
     @Body('title') title: string,
     @Body('content') content: string,
-  ): Promise<PostModel> {
-    return await this.postsService.upsertPostModel(+id, author, title, content);
+  ): Promise<PostsModel> {
+    return await this.postsService.upsertPostModel(+id, title, content);
   }
 
   /**

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PostModel } from 'src/entities/posts.entity';
 import { Repository } from 'typeorm';
+import { PostsModel } from './entities/posts.entity';
 
 /**
  * NestJS는 크게 Controller, Provider, Module 3가지 형태로 구성되어 있다.
@@ -13,17 +13,20 @@ import { Repository } from 'typeorm';
 export class PostsService {
   constructor(
     // PostModel을 다루는 Repository를 TypeORM으로부터 주입받는다.
-    @InjectRepository(PostModel)
-    private readonly postsRepository: Repository<PostModel>,
+    @InjectRepository(PostsModel)
+    private readonly postsRepository: Repository<PostsModel>,
   ) {}
 
-  public async getAllPostModels(): Promise<PostModel[]> {
-    return await this.postsRepository.find();
+  public async getAllPostModels(): Promise<PostsModel[]> {
+    return await this.postsRepository.find({
+      relations: ['author'], // author는 UsersModel의 관계를 참조한다.
+    });
   }
 
-  public async getPostModelById(id: number): Promise<PostModel> {
+  public async getPostModelById(id: number): Promise<PostsModel> {
     // id에 해당하는 PostModel을 찾아 반환한다.
     const post = await this.postsRepository.findOne({
+      relations: ['author'], // author는 UsersModel의 관계를 참조한다.
       where: {
         id,
       },
@@ -37,16 +40,16 @@ export class PostsService {
   }
 
   public async createPostModel(
-    author: string,
+    authorId: number,
     title: string,
     content: string,
-  ): Promise<PostModel> {
+  ): Promise<PostsModel> {
     // 1) create -> 저장할 객체를 생성한다.
     // 2) save -> 객체를 저장한다. (create 메서드에서 생성한 객체로)
 
     // 서버에서 생성된 PostModel로 id값이 생성되지 않는다.
     const post = this.postsRepository.create({
-      author,
+      author: { id: authorId }, // author는 UsersModel의 id값을 참조한다.
       title,
       content,
       likeCount: 0,
@@ -59,15 +62,10 @@ export class PostsService {
 
   public async updatePostModel(
     id: number,
-    author: string,
     title: string,
     content: string,
   ): Promise<void> {
     const updateData = {};
-
-    if (author) {
-      updateData['author'] = author;
-    }
 
     if (title) {
       updateData['title'] = title;
@@ -83,19 +81,14 @@ export class PostsService {
 
   public async upsertPostModel(
     id: number,
-    author: string,
     title: string,
     content: string,
-  ): Promise<PostModel> {
+  ): Promise<PostsModel> {
     // save의 기능
     // 1) 만약에 데이터가 존재하지 않는다면 (id 기준으로) 새로 생성한다.
     // 2) 만약에 데이터가 존재한다면 (같은 id의 값이 존재한다면) 존재하던 값을 업데이트 한다.
 
     const post = await this.getPostModelById(id);
-
-    if (author) {
-      post.author = author;
-    }
 
     if (title) {
       post.title = title;
