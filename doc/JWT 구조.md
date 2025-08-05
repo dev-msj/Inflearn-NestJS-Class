@@ -6,6 +6,15 @@
 
 > JSON 형식의 토큰 정보를 BASE 64로 인코딩한 값
 
+**예시**
+
+```plain
+{
+  "typ": "JWT",
+  "alg": "HS256"
+}
+```
+
 ### typ
 
 > 토큰이 어떤 종류의 객체인지 식별하며 생략 가능한 헤더. 수신자가 토큰을 올바르게 처리할 수 있도록 힌트를 제공한다.
@@ -39,13 +48,28 @@
 
 > JSON 형식의 사용자 인증 정보를 BASE 64로 인코딩한 값
 
+**예시**
+
+```plain
+{
+    "iss": "elec-dog",
+    "sub": "dev-msj",
+    "aud": "https://service.myblog.com"
+    "exp": "1800010110438",
+    "iat": "1754410115438",
+    "https://elec-dog.io/rules": "USER",
+    "userId": "alem",
+    "isPremium": true
+}
+```
+
 ### 등록된 클레임(Registered Claim)
 
 > 토큰에 대한 정보들을 담기 위해 미리 정해져 있는 클레임들
 
-* iss: issuer. 토큰 발급자.
-* sub: subject. 토큰 제목.
-* aud: audience. 토큰 대상자.
+* iss: issuer. 토큰의 발급자.
+* sub: subject. 토큰의 주체. 토큰을 사용할 사용자. ID, 이메일, 사번 등.
+* aud: audience. 토큰의 대상자. 토큰을 처리할 서비스. 프론트 서버의 origin, 앱 이름, API 서비스 식별자 등
 * exp: expiration. 토큰의 만료 일시. NumericDate(예: 1480849147370) 형식.
 * nbf: not before. 토큰의 활성 일시. NumericDate 형식. 이 일시가 지나야 유효한 토큰이 된다.
 * iat: issued at. 토큰이 발급된 일시. NumericDate 형식.
