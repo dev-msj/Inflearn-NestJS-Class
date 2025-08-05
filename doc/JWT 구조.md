@@ -1,5 +1,7 @@
 # JWT 구조
 
+> Header, Payload, Signature로 구성되며, 각각을 "."으로 연결한 구조
+
 ## Header
 
 > JSON 형식의 토큰 정보를 BASE 64로 인코딩한 값
