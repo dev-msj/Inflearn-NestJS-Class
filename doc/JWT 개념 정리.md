@@ -29,12 +29,14 @@
 
 ## 개선된 JWT 관리 방법
 
-* Access Token과 Refresh Token을 분리하여 사용한다.
+* Access Token과 Refresh Token 2가지 토큰을 생성하여 사용한다.
 * Access Token과 Refresh Token 모두 서버 저장소(예: DB, Redis)에 저장해 관리한다
-* Access Token은 약 10분~1시간 등 짧은 만료 기간을 사용해, 탈취 시 피해를 최소화한다.
-* Refresh Token은 2주~30일 등 긴 만료 기간을 사용한다.
 * Access Token이 만료되면, 클라이언트는 Refresh Token을 이용해 새로운 Access Token을 발급받는다.
-* Refresh Token도 탈취 위험이 있으므로, 서버 저장소에 저장하고, 재발급 시마다 갱신하거나 블랙리스트로 관리한다.
+* Access Token은 노출 빈도가 높기 때문에, 약 10분~2시간 정도의 짧은 만료 기간을 사용해, 탈취 시 피해를 최소화한다.
+* Refresh Token은 상대적으로 노출 빈도가 적기 때문에, 1주~90일 정도의 긴 만료 기간을 사용한다.
+* Refresh Token 또한 탈취 위험이 있으므로, Access Token 재발급 시에는 Refresh Token을 새로운 값으로 갱신하기도 한다.
+* 탈취와 같은 비정상 사용이 감지된 경우에는 블랙리스트에 등록해 무효화한다.
+* 로그아웃 시에는 서버 저장소에서 해당 Access Token과 Refresh Token을 삭제하거나 만료 처리한다.
 
 ### 개선으로 얻을 수 있는 이점
 
