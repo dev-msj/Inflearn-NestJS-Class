@@ -11,6 +11,81 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
   ) {}
+
+  /**
+   * 토큰을 사용하는 방식
+   *
+   * 1. 사용자가 로그인 또는 회원가입을 진행하면
+   *    accessToken과 refreshToken을 발급받는다.
+   * 2. 로그인 할 대는 Basic Token과 함께 요청을 보낸다.
+   *    Basic Token은 'email:password'를 Base64로 인코딩한 값이다.
+   *    ex) { authorization: 'Basic {token}' }
+   * 3. 아무나 접근할 수 없는 정보(private route)를 접근할 때는
+   *    accessToken을 Authorization 헤더에 Bearer 방식으로 담아 요청한다.
+   *    ex) { authorization: 'Bearer {token}' }
+   * 4. 토큰과 요청을 받은 함께 받은 서버는 토큰 검증을 통해
+   *    현재 요청을 보낸 사용자가 누구인지 알 수 있다.
+   *    ex) 토큰의 sub를 통해 현재 로그인한 사용자의 post만 가져올 수 있다.
+   *        토큰이 없다면 접근할 수 없다.
+   * 5. 모든 토큰은 만료 기간이 지나면 새로 토큰을 발급받아야 한다.
+   *    그렇지 않으면 jwtService.verify()에서 인증이 되지 않는다.
+   *    그래서 access token과 refresh token을 각각 새로 발급 받을 수 있는 경로가 필요하다.
+   *    ex) /auth/token/{access | refresh}
+   * 6. 토큰이 만료되면 각각의 토큰을 새로 발급 받을 수 있는 엔드포인트를 통해
+   *    새로 토큰을 발급받은 후 private route에 접근할 수 있다.
+   */
+
+  /**
+   * 헤더로부터 토큰을 받을 때
+   *
+   * { authorization: 'Basic {token}' }
+   * { authorization: 'Bearer {token}' }
+   */
+  public extractTokenFromHeader(header: string, isBearer: boolean) {
+    const prefix = isBearer ? 'Bearer' : 'Basic';
+
+    const splitToken = header.split(' ');
+    if (splitToken.length !== 2 || splitToken[0] !== prefix) {
+      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+    }
+
+    const token = splitToken[1];
+
+    return token;
+  }
+
+  public decodeBasicToken(token: string) {
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    const split = decoded.split(':');
+
+    if (split.length !== 2) {
+      console.log('유효하지 않은 ');
+      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+    }
+
+    const [email, password] = split;
+
+    return { email, password };
+  }
+
+  public rotateToken(token: string, isRefreshToken: boolean) {
+    const decoded = this.verifyToken(token);
+
+    if (decoded.type !== 'refresh') {
+      throw new UnauthorizedException(
+        '토큰 재발급은 refresh token만 가능합니다.',
+      );
+    }
+
+    return this.signToken({ ...decoded }, isRefreshToken);
+  }
+
+  private verifyToken(token: string) {
+    return this.jwtService.verify(token, {
+      secret: JWT_SECRET,
+    });
+  }
+
   /**
    * TODO
    *
