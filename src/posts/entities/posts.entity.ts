@@ -1,12 +1,9 @@
+import { Column, Entity, ManyToOne } from 'typeorm';
 import { UsersModel } from 'src/users/entities/users.entity';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { BaseModel } from 'src/common/entities/base.entity';
 
 @Entity()
-export class PostsModel {
-  // Auto-increment primary key
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class PostsModel extends BaseModel {
   @ManyToOne(() => UsersModel, (user) => user.posts, { nullable: false })
   author: UsersModel;
 
