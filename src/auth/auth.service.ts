@@ -80,7 +80,8 @@ export class AuthService {
     return this.signToken({ ...decoded }, isRefreshToken);
   }
 
-  private verifyToken(token: string) {
+  public verifyToken(token: string) {
+    // 토큰을 검증하고 payload를 반환한다.
     return this.jwtService.verify(token, {
       secret: JWT_SECRET,
     });
@@ -136,7 +137,7 @@ export class AuthService {
     return this.loginUser(authenticatedUser);
   }
 
-  private async authenticateWithEmailAndPassword(
+  public async authenticateWithEmailAndPassword(
     user: Pick<UsersModel, 'email' | 'password'>,
   ) {
     /**
