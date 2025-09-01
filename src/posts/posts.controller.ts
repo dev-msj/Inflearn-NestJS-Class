@@ -9,9 +9,14 @@ import {
   Patch,
   Post,
   Put,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { PostsModel } from './entities/posts.entity';
+import { AccessTokenGuard } from 'src/auth/guard/access-token.guard';
+import { User } from 'src/users/decorator/user.decorator';
+import { UsersModel } from 'src/users/entities/users.entity';
 
 @Controller('posts')
 export class PostsController {
@@ -47,13 +52,16 @@ export class PostsController {
    * - store에 새로운 resource를 생성한다.
    */
   @Post()
+  @UseGuards(AccessTokenGuard)
   public async postPostModel(
-    @Body('authorId') authorId: number,
+    @User('id') userId: number,
+    // @User() user: UsersModel,
+    // @Body('authorId') authorId: number,
     @Body('title') title: string,
     @Body('content') content: string,
-    @Body('isPublic', new DefaultValuePipe(true)) isPublic: boolean, // DefaultValuePipe를 통해 기본값을 설정할 수 있다.
+    // @Body('isPublic', new DefaultValuePipe(true)) isPublic: boolean, // DefaultValuePipe를 통해 기본값을 설정할 수 있다.
   ): Promise<PostsModel> {
-    return await this.postsService.createPostModel(authorId, title, content);
+    return await this.postsService.createPostModel(userId, title, content);
   }
 
   /**

@@ -81,10 +81,14 @@ export class AuthService {
   }
 
   public verifyToken(token: string) {
-    // 토큰을 검증하고 payload를 반환한다.
-    return this.jwtService.verify(token, {
-      secret: JWT_SECRET,
-    });
+    try {
+      // 토큰을 검증하고 payload를 반환한다.
+      return this.jwtService.verify(token, {
+        secret: JWT_SECRET,
+      });
+    } catch (error) {
+      throw new UnauthorizedException('토큰이 만료됐거나 잘못되었습니다.');
+    }
   }
 
   /**
