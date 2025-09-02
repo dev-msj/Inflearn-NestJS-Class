@@ -17,6 +17,8 @@ import { PostsModel } from './entities/posts.entity';
 import { AccessTokenGuard } from 'src/auth/guard/access-token.guard';
 import { User } from 'src/users/decorator/user.decorator';
 import { UsersModel } from 'src/users/entities/users.entity';
+import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 
 @Controller('posts')
 export class PostsController {
@@ -57,11 +59,12 @@ export class PostsController {
     @User('id') userId: number,
     // @User() user: UsersModel,
     // @Body('authorId') authorId: number,
-    @Body('title') title: string,
-    @Body('content') content: string,
+    @Body() createPostDto: CreatePostDto,
+    // @Body('title') title: string,
+    // @Body('content') content: string,
     // @Body('isPublic', new DefaultValuePipe(true)) isPublic: boolean, // DefaultValuePipe를 통해 기본값을 설정할 수 있다.
   ): Promise<PostsModel> {
-    return await this.postsService.createPostModel(userId, title, content);
+    return await this.postsService.createPostModel(userId, createPostDto);
   }
 
   /**
@@ -72,10 +75,9 @@ export class PostsController {
   @Patch(':id')
   public async patchPost(
     @Param('id', ParseIntPipe) id: number,
-    @Body('title') title?: string,
-    @Body('content') content?: string,
+    @Body() updatePostDto: UpdatePostDto,
   ): Promise<boolean> {
-    await this.postsService.updatePostModel(id, title, content);
+    await this.postsService.updatePostModel(id, updatePostDto);
 
     return true;
   }
@@ -88,10 +90,9 @@ export class PostsController {
   @Put(':id')
   public async putPost(
     @Param('id', ParseIntPipe) id: number,
-    @Body('title') title: string,
-    @Body('content') content: string,
+    @Body() updatePostDto: UpdatePostDto,
   ): Promise<PostsModel> {
-    return await this.postsService.upsertPostModel(id, title, content);
+    return await this.postsService.upsertPostModel(id, updatePostDto);
   }
 
   /**

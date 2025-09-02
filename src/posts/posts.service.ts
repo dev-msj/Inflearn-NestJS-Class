@@ -1,7 +1,9 @@
+import { CreatePostDto } from './dto/create-post.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PostsModel } from './entities/posts.entity';
+import { UpdatePostDto } from './dto/update-post.dto';
 
 /**
  * NestJS는 크게 Controller, Provider, Module 3가지 형태로 구성되어 있다.
@@ -41,8 +43,9 @@ export class PostsService {
 
   public async createPostModel(
     authorId: number,
-    title: string,
-    content: string,
+    createPostDto: CreatePostDto
+    // title: string,
+    // content: string,
   ): Promise<PostsModel> {
     // 1) create -> 저장할 객체를 생성한다.
     // 2) save -> 객체를 저장한다. (create 메서드에서 생성한 객체로)
@@ -50,8 +53,7 @@ export class PostsService {
     // 서버에서 생성된 PostModel로 id값이 생성되지 않는다.
     const post = this.postsRepository.create({
       author: { id: authorId }, // author는 UsersModel의 id값을 참조한다.
-      title,
-      content,
+      ...createPostDto,
       likeCount: 0,
       commentCount: 0,
     });
@@ -62,31 +64,9 @@ export class PostsService {
 
   public async updatePostModel(
     id: number,
-    title: string,
-    content: string,
+    updatePostDto: UpdatePostDto,
   ): Promise<void> {
-    const updateData = {};
-
-    if (title) {
-      updateData['title'] = title;
-    }
-
-    if (content) {
-      updateData['content'] = content;
-    }
-
-    // id에 해당하는 PostModel을 업데이트한다.
-    await this.postsRepository.update(id, updateData);
-  }
-
-  public async upsertPostModel(
-    id: number,
-    title: string,
-    content: string,
-  ): Promise<PostsModel> {
-    // save의 기능
-    // 1) 만약에 데이터가 존재하지 않는다면 (id 기준으로) 새로 생성한다.
-    // 2) 만약에 데이터가 존재한다면 (같은 id의 값이 존재한다면) 존재하던 값을 업데이트 한다.
+    const { title, content } = updatePostDto;
 
     const post = await this.getPostModelById(id);
 
@@ -97,6 +77,23 @@ export class PostsService {
     if (content) {
       post.content = content;
     }
+
+    // id에 해당하는 PostModel을 업데이트한다.
+    await this.postsRepository.update(id, post);
+  }
+
+  public async upsertPostModel(
+    id: number,
+    updatePostDto: UpdatePostDto,
+  ): Promise<PostsModel> {
+    // save의 기능
+    // 1) 만약에 데이터가 존재하지 않는다면 (id 기준으로) 새로 생성한다.
+    // 2) 만약에 데이터가 존재한다면 (같은 id의 값이 존재한다면) 존재하던 값을 업데이트 한다.
+
+    const post = await this.getPostModelById(id);
+
+    post.title = updatePostDto.title;
+    post.content = updatePostDto.content;
 
     // id에 해당하는 PostModel을 업데이트한다.
     return await this.postsRepository.save(post);

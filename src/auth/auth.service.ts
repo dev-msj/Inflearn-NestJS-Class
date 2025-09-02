@@ -1,3 +1,4 @@
+import { RegisterUserDto } from './dto/register-user.dto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersModel } from 'src/users/entities/users.entity';
@@ -117,15 +118,16 @@ export class AuthService {
    *      d. loginWithEmail에서 반환된 데이터를 기반으로 토큰 생성
    */
 
-  public async registerWithEmail(
-    user: Pick<UsersModel, 'email' | 'nickname' | 'password'>,
-  ) {
+  public async registerWithEmail(registerUserDto: RegisterUserDto) {
     // npm 사이트에서 bcrypt 패키지의 "A Note on Rounds" 섹션을 참고하여,
     // rounds 설정에 따른 처리 속도를 확인할 수 있다.
-    const hashedPassword = bcrypt.hashSync(user.password, HASH_ROUNDS);
+    const hashedPassword = bcrypt.hashSync(
+      registerUserDto.password,
+      HASH_ROUNDS,
+    );
     const createdUser = await this.usersService.createUser({
-      nickname: user.nickname,
-      email: user.email,
+      nickname: registerUserDto.nickname,
+      email: registerUserDto.email,
       password: hashedPassword,
     });
 

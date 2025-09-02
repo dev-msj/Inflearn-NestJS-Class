@@ -6,6 +6,7 @@ import { MinLengthPipe } from './pipe/min-length.pipe';
 import { BasicTokenGuard } from './guard/basic-token.guard';
 import { AccessTokenGuard } from './guard/access-token.guard';
 import { RefreshTokenGuard } from './guard/refresh-token.guard';
+import { RegisterUserDto } from './dto/register-user.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -37,16 +38,13 @@ export class AuthController {
 
   @Post('register/email')
   public async postRegisterEmail(
-    @Body('email') email: string,
-    @Body('nickname') nickname: string,
-    // @Body('password', PasswordPipe) password: string,
-    @Body('password', new MaxLengthPipe(8, '비밀번호'), new MinLengthPipe(3)) // ","를 활용해 여러개의 파이프를 적용할 수 있다.
-    password: string,
+    @Body() registerUserDto: RegisterUserDto,
+    // @Body('email') email: string,
+    // @Body('nickname') nickname: string,
+    // // @Body('password', PasswordPipe) password: string,
+    // @Body('password', new MaxLengthPipe(8, '비밀번호'), new MinLengthPipe(3)) // ","를 활용해 여러개의 파이프를 적용할 수 있다.
+    // password: string,
   ) {
-    return await this.authService.registerWithEmail({
-      email,
-      nickname,
-      password,
-    });
+    return await this.authService.registerWithEmail(registerUserDto);
   }
 }
