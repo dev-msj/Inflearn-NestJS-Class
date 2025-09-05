@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -19,6 +20,7 @@ import { User } from 'src/users/decorator/user.decorator';
 import { UsersModel } from 'src/users/entities/users.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { PaginatePostDto } from './dto/paginate-post.dto';
 
 @Controller('posts')
 export class PostsController {
@@ -31,8 +33,18 @@ export class PostsController {
    * - store는 복수형 명사로 작성한다.
    */
   @Get()
-  public async getPostModels(): Promise<PostsModel[]> {
-    return await this.postsService.getAllPostModels();
+  public async getPostModels(@Query() paginatePostDto: PaginatePostDto) {
+    console.log(paginatePostDto);
+    // return await this.postsService.getAllPostModels();
+    return await this.postsService.paginatePosts(paginatePostDto);
+  }
+
+  @Post('generate')
+  @UseGuards(AccessTokenGuard)
+  public async generatePostModels(@User() user: UsersModel) {
+    await this.postsService.generatePosts(user.id);
+
+    return true;
   }
 
   /**
