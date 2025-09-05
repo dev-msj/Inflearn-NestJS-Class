@@ -24,6 +24,10 @@ async function bootstrap() {
         // 자동으로 타입을 변환하는 것을 허용.
         enableImplicitConversion: true,
       },
+      // 요청에서 받은 plain object에서 DTO에 정의되지 않은 프로퍼티는 제거한다.
+      whitelist: true,
+      // DTO에 정의되지 않은 프로퍼티가 요청의 plain object에 포함되어 있을 경우 에러를 발생시킨다.
+      forbidNonWhitelisted: true,
     }),
   );
 

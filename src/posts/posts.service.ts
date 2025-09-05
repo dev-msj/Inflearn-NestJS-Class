@@ -6,6 +6,7 @@ import { PostsModel } from './entities/posts.entity';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PaginatePostDto } from './dto/paginate-post.dto';
 import { HOST, PROTOCOL } from 'src/common/const/env.const';
+import { CommonService } from 'src/common/common.service';
 
 /**
  * NestJS는 크게 Controller, Provider, Module 3가지 형태로 구성되어 있다.
@@ -19,6 +20,7 @@ export class PostsService {
     // PostModel을 다루는 Repository를 TypeORM으로부터 주입받는다.
     @InjectRepository(PostsModel)
     private readonly postsRepository: Repository<PostsModel>,
+    private readonly commonService: CommonService,
   ) {}
 
   public async getAllPostModels(): Promise<PostsModel[]> {
@@ -28,11 +30,19 @@ export class PostsService {
   }
 
   public async paginatePosts(paginatePostDto: PaginatePostDto) {
-    if (paginatePostDto.page) {
-      return await this.pagePaginatePosts(paginatePostDto);
-    } else {
-      return await this.cursorPaginatePosts(paginatePostDto);
-    }
+    // if (paginatePostDto.page) {
+    //   return await this.pagePaginatePosts(paginatePostDto);
+    // } else {
+    //   return await this.cursorPaginatePosts(paginatePostDto);
+    // }
+    return await this.commonService.paginate<PostsModel>(
+      paginatePostDto,
+      this.postsRepository,
+      {
+        relations: ['author'],
+      },
+      'posts',
+    );
   }
 
   private async pagePaginatePosts(paginatePostDto: PaginatePostDto) {
@@ -60,10 +70,10 @@ export class PostsService {
 
   private async cursorPaginatePosts(paginatePostDto: PaginatePostDto) {
     const where: FindOptionsWhere<PostsModel> = {};
-    if (paginatePostDto.where__id_less_than) {
-      where.id = LessThan(paginatePostDto.where__id_less_than);
-    } else if (paginatePostDto.where__id_more_than) {
-      where.id = MoreThan(paginatePostDto.where__id_more_than);
+    if (paginatePostDto.where__id__less_than) {
+      where.id = LessThan(paginatePostDto.where__id__less_than);
+    } else if (paginatePostDto.where__id__more_than) {
+      where.id = MoreThan(paginatePostDto.where__id__more_than);
     }
 
     const posts = await this.postsRepository.find({
@@ -96,8 +106,8 @@ export class PostsService {
       Object.keys(paginatePostDto).forEach((key) => {
         if (
           paginatePostDto[key] &&
-          key !== 'where__id_more_than' &&
-          key !== 'where__id_less_than'
+          key !== 'where__id__more_than' &&
+          key !== 'where__id__less_than'
         ) {
           nextUrl.searchParams.append(key, paginatePostDto[key]);
         }
@@ -105,9 +115,9 @@ export class PostsService {
 
       let key = null;
       if (paginatePostDto.order__createdAt === 'ASC') {
-        key = 'where__id_more_than';
+        key = 'where__id__more_than';
       } else {
-        key = 'where__id_less_than';
+        key = 'where__id__less_than';
       }
 
       nextUrl.searchParams.append(key, lastItem.id.toString());
