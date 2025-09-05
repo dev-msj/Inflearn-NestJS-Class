@@ -27,8 +27,38 @@ export class PostsService {
     });
   }
 
-  // 1. 오름차순으로 정렬하는 pagination만 구현한다.
   public async paginatePosts(paginatePostDto: PaginatePostDto) {
+    if (paginatePostDto.page) {
+      return await this.pagePaginatePosts(paginatePostDto);
+    } else {
+      return await this.cursorPaginatePosts(paginatePostDto);
+    }
+  }
+
+  private async pagePaginatePosts(paginatePostDto: PaginatePostDto) {
+    /**
+     * data: Data[]
+     * total: number
+     * next: optional => 화면상의 페이지 버튼을 통해 결정되기 때문에 사실상 필요없음.
+     */
+
+    // findAndCount은 조건에 해당하는 쿼리 데이터와
+    // take, skip이 고려되지 않은 실제 총 데이터의 갯수를 반환한다.
+    const [posts, total] = await this.postsRepository.findAndCount({
+      take: paginatePostDto.take,
+      skip: (paginatePostDto.page - 1) * paginatePostDto.take,
+      order: {
+        createdAt: paginatePostDto.order__createdAt,
+      },
+    });
+
+    return {
+      data: posts,
+      total,
+    };
+  }
+
+  private async cursorPaginatePosts(paginatePostDto: PaginatePostDto) {
     const where: FindOptionsWhere<PostsModel> = {};
     if (paginatePostDto.where__id_less_than) {
       where.id = LessThan(paginatePostDto.where__id_less_than);

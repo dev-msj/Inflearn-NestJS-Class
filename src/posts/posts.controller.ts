@@ -34,7 +34,6 @@ export class PostsController {
    */
   @Get()
   public async getPostModels(@Query() paginatePostDto: PaginatePostDto) {
-    console.log(paginatePostDto);
     // return await this.postsService.getAllPostModels();
     return await this.postsService.paginatePosts(paginatePostDto);
   }

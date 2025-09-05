@@ -2,6 +2,10 @@ import { Type } from 'class-transformer';
 import { IsIn, IsNumber, IsOptional } from 'class-validator';
 
 export class PaginatePostDto {
+  @IsNumber()
+  @IsOptional()
+  page?: number;
+
   // 이전 데이터의 마지막 ID
   // 이 프로퍼티에 입력된 ID보다 더 작은 ID를 가져오기
   @IsNumber()
