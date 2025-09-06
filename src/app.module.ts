@@ -26,6 +26,11 @@ import {
     }),
     PostsModule,
     // forRoot() 메서드를 사용하여 TypeORM 연결하기 위한 설정을 추가한다.
+    /**
+     * 비동기 설정을 위해 forRootAsync() 메서드를 사용한다.
+     * 동적 환경 변수, 외부 서비스, 조건부 설정 등 런타임에서
+     * 필요한 의존성(예: ConfigService)을 주입(inject)받아 설정에 활용할 수 있다.
+     */
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
