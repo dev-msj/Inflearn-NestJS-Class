@@ -2,13 +2,18 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersModel } from 'src/users/entities/users.entity';
-import { HASH_ROUNDS, JWT_SECRET } from './const/auth.const';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
+import {
+  ENV_HASH_ROUNDS_KEY,
+  ENV_JWT_SECRET_KEY,
+} from 'src/common/const/env-keys.const';
 
 @Injectable()
 export class AuthService {
   constructor(
+    private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly usersService: UsersService,
   ) {}
@@ -85,7 +90,7 @@ export class AuthService {
     try {
       // 토큰을 검증하고 payload를 반환한다.
       return this.jwtService.verify(token, {
-        secret: JWT_SECRET,
+        secret: this.configService.get<string>(ENV_JWT_SECRET_KEY),
       });
     } catch (error) {
       throw new UnauthorizedException('토큰이 만료됐거나 잘못되었습니다.');
@@ -123,7 +128,7 @@ export class AuthService {
     // rounds 설정에 따른 처리 속도를 확인할 수 있다.
     const hashedPassword = bcrypt.hashSync(
       registerUserDto.password,
-      HASH_ROUNDS,
+      parseInt(this.configService.get<string>(ENV_HASH_ROUNDS_KEY)),
     );
     const createdUser = await this.usersService.createUser({
       nickname: registerUserDto.nickname,
@@ -197,7 +202,7 @@ export class AuthService {
 
     // jwtService를 사용하여 토큰을 생성한다.
     return this.jwtService.sign(payload, {
-      secret: JWT_SECRET,
+      secret: this.configService.get<string>(ENV_JWT_SECRET_KEY),
       expiresIn: isRefreshToken ? 60 * 60 : 60 * 5, // seconds 단위로 설정
     });
   }

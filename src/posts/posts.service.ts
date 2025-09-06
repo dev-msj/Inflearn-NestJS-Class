@@ -5,8 +5,12 @@ import { FindOptionsWhere, LessThan, MoreThan, Repository } from 'typeorm';
 import { PostsModel } from './entities/posts.entity';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PaginatePostDto } from './dto/paginate-post.dto';
-import { HOST, PROTOCOL } from 'src/common/const/env.const';
 import { CommonService } from 'src/common/common.service';
+import {
+  ENV_HOST_KEY,
+  ENV_PROTOCOL_KEY,
+} from 'src/common/const/env-keys.const';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * NestJS는 크게 Controller, Provider, Module 3가지 형태로 구성되어 있다.
@@ -17,6 +21,7 @@ import { CommonService } from 'src/common/common.service';
 @Injectable()
 export class PostsService {
   constructor(
+    private readonly configService: ConfigService,
     // PostModel을 다루는 Repository를 TypeORM으로부터 주입받는다.
     @InjectRepository(PostsModel)
     private readonly postsRepository: Repository<PostsModel>,
@@ -96,7 +101,11 @@ export class PostsService {
         ? posts[posts.length - 1]
         : null;
 
-    const nextUrl = lastItem && new URL(`${PROTOCOL}://${HOST}/posts`);
+    const nextUrl =
+      lastItem &&
+      new URL(
+        `${this.configService.get<string>(ENV_PROTOCOL_KEY)}://${this.configService.get<string>(ENV_HOST_KEY)}/posts`,
+      );
     if (nextUrl) {
       /**
        * dto의 키 값들을 루핑하면서
