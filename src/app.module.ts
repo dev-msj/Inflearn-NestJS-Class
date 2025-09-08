@@ -17,6 +17,8 @@ import {
   ENV_DB_PORT_KEY,
   ENV_DB_USERNAME_KEY,
 } from './common/const/env-keys.const';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { PUBLIC_FOLDER_PATH } from './common/const/path.const';
 
 @Module({
   imports: [
@@ -24,7 +26,6 @@ import {
       envFilePath: '.env',
       isGlobal: true, // ConfigModule을 애플리케이션 전체에서 사용할 수 있도록 설정
     }),
-    PostsModule,
     // forRoot() 메서드를 사용하여 TypeORM 연결하기 위한 설정을 추가한다.
     /**
      * 비동기 설정을 위해 forRootAsync() 메서드를 사용한다.
@@ -45,7 +46,20 @@ import {
         synchronize: true,
       }),
     }),
+    ServeStaticModule.forRoot({
+      /**
+       * rootPath만 설정할 경우, root 폴더명은 '/'가 된다.
+       * 그래서 파일 요청 시에 "http://localhost:3000/posts/파일명"으로 접근해야 한다.
+       *
+       * 하지만 이렇게만 설정하면 기존의 'posts'로 사용 중인 API 경로와 충돌이 발생한다.
+       * 따라서 serveRoot 옵션을 추가하여 정적 파일의 root 폴더명을 변경해준다.
+       * "http://localhost:3000/public/post/파일명"으로 접근할 수 있도록 한다.
+       */
+      rootPath: PUBLIC_FOLDER_PATH,
+      serveRoot: '/public',
+    }),
     UsersModule,
+    PostsModule,
     AuthModule,
     CommonModule,
   ],

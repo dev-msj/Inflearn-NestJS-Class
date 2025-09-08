@@ -9,6 +9,7 @@ import { CommonModule } from 'src/common/common.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { extname } from 'path';
 import * as multer from 'multer';
+import * as fs from 'fs';
 import { POSTS_IMAGE_PATH } from 'src/common/const/path.const';
 import { v4 as uuid } from 'uuid';
 
@@ -43,6 +44,10 @@ import { v4 as uuid } from 'uuid';
       },
       storage: multer.diskStorage({
         destination: (req, file, cb) => {
+          // 경로가 존재하지 않을 경우, 경로를 생성.
+          if (!fs.existsSync(POSTS_IMAGE_PATH)) {
+            fs.mkdirSync(POSTS_IMAGE_PATH, { recursive: true });
+          }
           cb(null, POSTS_IMAGE_PATH); // POSTS_IMAGE_PATH에 파일 저장
         },
         filename: (req, file, cb) => {
