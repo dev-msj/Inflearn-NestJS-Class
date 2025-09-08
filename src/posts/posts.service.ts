@@ -1,16 +1,15 @@
 import { CreatePostDto } from './dto/create-post.dto';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, LessThan, MoreThan, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { PostsModel } from './entities/posts.entity';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PaginatePostDto } from './dto/paginate-post.dto';
 import { CommonService } from 'src/common/common.service';
-import {
-  ENV_HOST_KEY,
-  ENV_PROTOCOL_KEY,
-} from 'src/common/const/env-keys.const';
 import { ConfigService } from '@nestjs/config';
+import { join } from 'path';
+import { POSTS_IMAGE_PATH, TEMP_IMAGE_PATH } from 'src/common/const/path.const';
+import { promises } from 'fs';
 
 /**
  * NestJS는 크게 Controller, Provider, Module 3가지 형태로 구성되어 있다.
@@ -50,112 +49,7 @@ export class PostsService {
     );
   }
 
-  private async pagePaginatePosts(paginatePostDto: PaginatePostDto) {
-    /**
-     * data: Data[]
-     * total: number
-     * next: optional => 화면상의 페이지 버튼을 통해 결정되기 때문에 사실상 필요없음.
-     */
 
-    // findAndCount은 조건에 해당하는 쿼리 데이터와
-    // take, skip이 고려되지 않은 실제 총 데이터의 갯수를 반환한다.
-    const [posts, total] = await this.postsRepository.findAndCount({
-      take: paginatePostDto.take,
-      skip: (paginatePostDto.page - 1) * paginatePostDto.take,
-      order: {
-        createdAt: paginatePostDto.order__createdAt,
-      },
-    });
-
-    return {
-      data: posts,
-      total,
-    };
-  }
-
-  private async cursorPaginatePosts(paginatePostDto: PaginatePostDto) {
-    const where: FindOptionsWhere<PostsModel> = {};
-    if (paginatePostDto.where__id__less_than) {
-      where.id = LessThan(paginatePostDto.where__id__less_than);
-    } else if (paginatePostDto.where__id__more_than) {
-      where.id = MoreThan(paginatePostDto.where__id__more_than);
-    }
-
-    const posts = await this.postsRepository.find({
-      where,
-      order: {
-        createdAt: paginatePostDto.order__createdAt,
-      },
-      take: paginatePostDto.take,
-    });
-
-    // 검색된 post가 존재할 경우 마지막 post를 반환
-    /**
-     * 이 로직에서는 db의 총 데이터의 갯수가 take의 배수일 경우
-     * 마지막 페이지임에도 다음 페이지가 존재한다고 판단하는 문제가 있다.
-     * 이를 회피하기 위해 db에서 데이터 조회 시 1개 더 가져오도록 하여
-     * 마지막 페이지임을 더욱 명확히 판단할 수 있을 것 같다.
-     */
-    const lastItem =
-      posts.length > 0 && posts.length === paginatePostDto.take
-        ? posts[posts.length - 1]
-        : null;
-
-    const nextUrl =
-      lastItem &&
-      new URL(
-        `${this.configService.get<string>(ENV_PROTOCOL_KEY)}://${this.configService.get<string>(ENV_HOST_KEY)}/posts`,
-      );
-    if (nextUrl) {
-      /**
-       * dto의 키 값들을 루핑하면서
-       * 키 값에 해당되는 value가 존재하면
-       * param에 그대로 붙여넣는다.
-       */
-      Object.keys(paginatePostDto).forEach((key) => {
-        if (
-          paginatePostDto[key] &&
-          key !== 'where__id__more_than' &&
-          key !== 'where__id__less_than'
-        ) {
-          nextUrl.searchParams.append(key, paginatePostDto[key]);
-        }
-      });
-
-      let key = null;
-      if (paginatePostDto.order__createdAt === 'ASC') {
-        key = 'where__id__more_than';
-      } else {
-        key = 'where__id__less_than';
-      }
-
-      nextUrl.searchParams.append(key, lastItem.id.toString());
-    }
-
-    /**
-     * Response
-     *
-     * data: Data[],
-     * cursor: {
-     *   after: 마지막 데이터의 ID
-     * },
-     * count: 응답한 데이터의 갯수
-     * next: 다음 요청에 사용할 URL
-     *
-     * 페이지 기반의 페이징 방식은 중간 데이터가 추가/삭제되었을 때
-     * 데이터의 중복이나 누락이 발생하여 자연스럽지 못한 사용자 경험을 줄 수 있다.
-     * 이러한 일이 발생하더라도 사용자가 자연스러운 탐색 경험을 할 수 있도록
-     * 마지막 아이템의 ID를 활용하는 커서 기반의 페이징 방식을 활용한다.
-     */
-    return {
-      data: posts,
-      cursor: {
-        after: lastItem?.id ?? null,
-      },
-      count: posts.length,
-      next: nextUrl?.toString() ?? null,
-    };
-  }
 
   public async generatePosts(userId: number) {
     for (let i = 1; i <= 100; i++) {
@@ -185,9 +79,6 @@ export class PostsService {
   public async createPostModel(
     authorId: number,
     createPostDto: CreatePostDto,
-    // title: string,
-    // content: string,
-    image?: string,
   ): Promise<PostsModel> {
     // 1) create -> 저장할 객체를 생성한다.
     // 2) save -> 객체를 저장한다. (create 메서드에서 생성한 객체로)
@@ -196,13 +87,36 @@ export class PostsService {
     const post = this.postsRepository.create({
       author: { id: authorId }, // author는 UsersModel의 id값을 참조한다.
       ...createPostDto,
-      image,
       likeCount: 0,
       commentCount: 0,
     });
 
     // DB에 실제로 저장된 결과값을 반환한다. (DB에서 auto-increment된 id값이 생성된다.)
     return await this.postsRepository.save(post);
+  }
+
+  public async createPostImage(createPostDto: CreatePostDto): Promise<boolean> {
+    // image 이름을 기반으로 파일의 경로를 생성한다
+    const tempImagePath = join(
+      TEMP_IMAGE_PATH,
+      createPostDto.image, // TEMP_IMAGE_PATH에 저장된 파일 이름
+    );
+
+    try {
+      promises.access(tempImagePath); // 파일이 존재하는지 확인
+    } catch (e) {
+      throw new BadRequestException('존재하지 않는 파일입니다.');
+    }
+
+    const postImagePath = join(
+      POSTS_IMAGE_PATH,
+      createPostDto.image, // POSTS_IMAGE_PATH에 저장될 파일 이름
+    );
+
+    // TEMP_IMAGE_PATH에 저장된 파일을 POSTS_IMAGE_PATH로 이동시킨다.
+    await promises.rename(tempImagePath, postImagePath);
+
+    return true;
   }
 
   public async updatePostModel(

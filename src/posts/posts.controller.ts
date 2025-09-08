@@ -72,19 +72,12 @@ export class PostsController {
   @UseInterceptors(FileInterceptor('image'))
   public async postPostModel(
     @User('id') userId: number,
-    // @User() user: UsersModel,
-    // @Body('authorId') authorId: number,
     @Body() createPostDto: CreatePostDto,
-    // @Body('title') title: string,
-    // @Body('content') content: string,
     // @Body('isPublic', new DefaultValuePipe(true)) isPublic: boolean, // DefaultValuePipe를 통해 기본값을 설정할 수 있다.
-    @UploadedFile() file?: Express.Multer.File,
   ): Promise<PostsModel> {
-    return await this.postsService.createPostModel(
-      userId,
-      createPostDto,
-      file?.filename,
-    );
+    await this.postsService.createPostImage(createPostDto);
+
+    return await this.postsService.createPostModel(userId, createPostDto);
   }
 
   /**

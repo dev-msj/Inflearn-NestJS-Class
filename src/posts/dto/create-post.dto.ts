@@ -1,11 +1,16 @@
 import { PickType } from '@nestjs/mapped-types';
 import { PostsModel } from '../entities/posts.entity';
+import { IsOptional, IsString } from 'class-validator';
 
 // Pick, Omit, Partial -> Type 반환
 // PickType, OmitType, PartialType -> 값을 반환
 
 // PickType이 메타데이터를 복사하므로 PostsModel에 이미 class-validator 데코레이터가 적용되어 있음
-export class CreatePostDto extends PickType(PostsModel, ['title', 'content']) {}
+export class CreatePostDto extends PickType(PostsModel, ['title', 'content']) {
+  @IsString()
+  @IsOptional()
+  image?: string;
+}
 
 /**
  * 이 방식에 대한 내 의견.
