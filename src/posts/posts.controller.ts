@@ -11,7 +11,9 @@ import {
   Put,
   Query,
   Request,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { PostsModel } from './entities/posts.entity';
@@ -21,6 +23,7 @@ import { UsersModel } from 'src/users/entities/users.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PaginatePostDto } from './dto/paginate-post.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('posts')
 export class PostsController {
@@ -66,6 +69,7 @@ export class PostsController {
    */
   @Post()
   @UseGuards(AccessTokenGuard)
+  @UseInterceptors(FileInterceptor('image'))
   public async postPostModel(
     @User('id') userId: number,
     // @User() user: UsersModel,
@@ -74,8 +78,13 @@ export class PostsController {
     // @Body('title') title: string,
     // @Body('content') content: string,
     // @Body('isPublic', new DefaultValuePipe(true)) isPublic: boolean, // DefaultValuePipe를 통해 기본값을 설정할 수 있다.
+    @UploadedFile() file?: Express.Multer.File,
   ): Promise<PostsModel> {
-    return await this.postsService.createPostModel(userId, createPostDto);
+    return await this.postsService.createPostModel(
+      userId,
+      createPostDto,
+      file?.filename,
+    );
   }
 
   /**

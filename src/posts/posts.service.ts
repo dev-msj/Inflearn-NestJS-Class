@@ -187,6 +187,7 @@ export class PostsService {
     createPostDto: CreatePostDto,
     // title: string,
     // content: string,
+    image?: string,
   ): Promise<PostsModel> {
     // 1) create -> 저장할 객체를 생성한다.
     // 2) save -> 객체를 저장한다. (create 메서드에서 생성한 객체로)
@@ -195,6 +196,7 @@ export class PostsService {
     const post = this.postsRepository.create({
       author: { id: authorId }, // author는 UsersModel의 id값을 참조한다.
       ...createPostDto,
+      image,
       likeCount: 0,
       commentCount: 0,
     });
