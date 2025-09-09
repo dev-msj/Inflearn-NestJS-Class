@@ -4,7 +4,7 @@ import { CommonController } from './common.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import * as multer from 'multer';
 import { extname } from 'path';
-import { POSTS_IMAGE_PATH, TEMP_IMAGE_PATH } from './const/path.const';
+import { TEMP_IMAGE_PATH } from './const/path.const';
 import * as fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { AuthModule } from 'src/auth/auth.module';
@@ -48,12 +48,6 @@ import { UsersModule } from 'src/users/users.module';
             fs.mkdirSync(TEMP_IMAGE_PATH, { recursive: true });
           }
           cb(null, TEMP_IMAGE_PATH); // TEMP_IMAGE_PATH에 파일 저장
-
-          // 경로가 존재하지 않을 경우, 경로를 생성.
-          // if (!fs.existsSync(POSTS_IMAGE_PATH)) {
-          //   fs.mkdirSync(POSTS_IMAGE_PATH, { recursive: true });
-          // }
-          // cb(null, POSTS_IMAGE_PATH); // POSTS_IMAGE_PATH에 파일 저장
         },
         filename: (req, file, cb) => {
           cb(null, `${uuid()}${extname(file.originalname)}`); // 파일 이름을 UUID로 설정

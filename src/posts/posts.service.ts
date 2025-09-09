@@ -1,15 +1,14 @@
+import { DEFAULT_POST_FIND_OPTIONS } from './const/default-post-find-options.const';
 import { CreatePostDto } from './dto/create-post.dto';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { PostsModel } from './entities/posts.entity';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PaginatePostDto } from './dto/paginate-post.dto';
 import { CommonService } from 'src/common/common.service';
-import { ConfigService } from '@nestjs/config';
-import { join } from 'path';
-import { POSTS_IMAGE_PATH, TEMP_IMAGE_PATH } from 'src/common/const/path.const';
-import { promises } from 'fs';
+import { ImageModel, ImageModelType } from 'src/common/entities/image.entity';
+import { ImageService } from './image/image.service';
 
 /**
  * NestJS는 크게 Controller, Provider, Module 3가지 형태로 구성되어 있다.
@@ -20,16 +19,17 @@ import { promises } from 'fs';
 @Injectable()
 export class PostsService {
   constructor(
-    private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
     // PostModel을 다루는 Repository를 TypeORM으로부터 주입받는다.
     @InjectRepository(PostsModel)
     private readonly postsRepository: Repository<PostsModel>,
+    private readonly imageService: ImageService,
     private readonly commonService: CommonService,
   ) {}
 
   public async getAllPostModels(): Promise<PostsModel[]> {
     return await this.postsRepository.find({
-      relations: ['author'], // author는 UsersModel의 관계를 참조한다.
+      ...DEFAULT_POST_FIND_OPTIONS,
     });
   }
 
@@ -43,19 +43,18 @@ export class PostsService {
       paginatePostDto,
       this.postsRepository,
       {
-        relations: ['author'],
+        ...DEFAULT_POST_FIND_OPTIONS,
       },
       'posts',
     );
   }
-
-
 
   public async generatePosts(userId: number) {
     for (let i = 1; i <= 100; i++) {
       await this.createPostModel(userId, {
         title: `임의의 Post ${i}`,
         content: `임의의 Content for post ${i}`,
+        images: [],
       });
     }
   }
@@ -63,7 +62,7 @@ export class PostsService {
   public async getPostModelById(id: number): Promise<PostsModel> {
     // id에 해당하는 PostModel을 찾아 반환한다.
     const post = await this.postsRepository.findOne({
-      relations: ['author'], // author는 UsersModel의 관계를 참조한다.
+      ...DEFAULT_POST_FIND_OPTIONS,
       where: {
         id,
       },
@@ -76,47 +75,43 @@ export class PostsService {
     return post;
   }
 
+  // TypeORM 0.3 이상부터는 datasource의 transaction()을 통해 트랜잭션을 처리한다.
   public async createPostModel(
     authorId: number,
     createPostDto: CreatePostDto,
   ): Promise<PostsModel> {
-    // 1) create -> 저장할 객체를 생성한다.
-    // 2) save -> 객체를 저장한다. (create 메서드에서 생성한 객체로)
+    // entityManager는 트랜잭션이 성공했을 때에만 커밋된다.
+    return await this.dataSource.transaction(async (entityManager) => {
+      // 트랜잭션의 컨텍스트에서 사용할 Repository를 가져온다.
+      const postsRepository = entityManager.getRepository(PostsModel);
+      const imageRepository = entityManager.getRepository(ImageModel);
 
-    // 서버에서 생성된 PostModel로 id값이 생성되지 않는다.
-    const post = this.postsRepository.create({
-      author: { id: authorId }, // author는 UsersModel의 id값을 참조한다.
-      ...createPostDto,
-      likeCount: 0,
-      commentCount: 0,
+      // 서버에서 생성된 PostModel로 id값이 생성되지 않는다.
+      const post = postsRepository.create({
+        author: { id: authorId }, // author는 UsersModel의 id값을 참조한다.
+        ...createPostDto,
+        images: [],
+        likeCount: 0,
+        commentCount: 0,
+      });
+
+      // DB에 실제로 저장된 결과값을 반환한다. (DB에서 auto-increment된 id값이 생성된다.)
+      const newPost = await postsRepository.save(post);
+
+      for (let i = 0; i < createPostDto.images.length; i++) {
+        await this.imageService.createPostImage(
+          {
+            post: newPost,
+            order: i,
+            path: createPostDto.images[i],
+            imageModelType: ImageModelType.POST_IMAGE,
+          },
+          imageRepository,
+        );
+      }
+
+      return this.getPostModelById(newPost.id);
     });
-
-    // DB에 실제로 저장된 결과값을 반환한다. (DB에서 auto-increment된 id값이 생성된다.)
-    return await this.postsRepository.save(post);
-  }
-
-  public async createPostImage(createPostDto: CreatePostDto): Promise<boolean> {
-    // image 이름을 기반으로 파일의 경로를 생성한다
-    const tempImagePath = join(
-      TEMP_IMAGE_PATH,
-      createPostDto.image, // TEMP_IMAGE_PATH에 저장된 파일 이름
-    );
-
-    try {
-      promises.access(tempImagePath); // 파일이 존재하는지 확인
-    } catch (e) {
-      throw new BadRequestException('존재하지 않는 파일입니다.');
-    }
-
-    const postImagePath = join(
-      POSTS_IMAGE_PATH,
-      createPostDto.image, // POSTS_IMAGE_PATH에 저장될 파일 이름
-    );
-
-    // TEMP_IMAGE_PATH에 저장된 파일을 POSTS_IMAGE_PATH로 이동시킨다.
-    await promises.rename(tempImagePath, postImagePath);
-
-    return true;
   }
 
   public async updatePostModel(

@@ -10,8 +10,6 @@ import {
   Post,
   Put,
   Query,
-  Request,
-  UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -75,8 +73,6 @@ export class PostsController {
     @Body() createPostDto: CreatePostDto,
     // @Body('isPublic', new DefaultValuePipe(true)) isPublic: boolean, // DefaultValuePipe를 통해 기본값을 설정할 수 있다.
   ): Promise<PostsModel> {
-    await this.postsService.createPostImage(createPostDto);
-
     return await this.postsService.createPostModel(userId, createPostDto);
   }
 
