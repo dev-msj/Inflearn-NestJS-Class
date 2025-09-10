@@ -81,37 +81,41 @@ export class PostsService {
     createPostDto: CreatePostDto,
   ): Promise<PostsModel> {
     // entityManager는 트랜잭션이 성공했을 때에만 커밋된다.
-    return await this.dataSource.transaction(async (entityManager) => {
-      // 트랜잭션의 컨텍스트에서 사용할 Repository를 가져온다.
-      const postsRepository = entityManager.getRepository(PostsModel);
-      const imageRepository = entityManager.getRepository(ImageModel);
+    const newPostId = await this.dataSource.transaction(
+      async (entityManager) => {
+        // 트랜잭션의 컨텍스트에서 사용할 Repository를 가져온다.
+        const postsRepository = entityManager.getRepository(PostsModel);
+        const imageRepository = entityManager.getRepository(ImageModel);
 
-      // 서버에서 생성된 PostModel로 id값이 생성되지 않는다.
-      const post = postsRepository.create({
-        author: { id: authorId }, // author는 UsersModel의 id값을 참조한다.
-        ...createPostDto,
-        images: [],
-        likeCount: 0,
-        commentCount: 0,
-      });
+        // 서버에서 생성된 PostModel로 id값이 생성되지 않는다.
+        const post = postsRepository.create({
+          author: { id: authorId }, // author는 UsersModel의 id값을 참조한다.
+          ...createPostDto,
+          images: [],
+          likeCount: 0,
+          commentCount: 0,
+        });
 
-      // DB에 실제로 저장된 결과값을 반환한다. (DB에서 auto-increment된 id값이 생성된다.)
-      const newPost = await postsRepository.save(post);
+        // DB에 실제로 저장된 결과값을 반환한다. (DB에서 auto-increment된 id값이 생성된다.)
+        const newPost = await postsRepository.save(post);
 
-      for (let i = 0; i < createPostDto.images.length; i++) {
-        await this.imageService.createPostImage(
-          {
-            post: newPost,
-            order: i,
-            path: createPostDto.images[i],
-            imageModelType: ImageModelType.POST_IMAGE,
-          },
-          imageRepository,
-        );
-      }
+        for (let i = 0; i < createPostDto.images.length; i++) {
+          await this.imageService.createPostImage(
+            {
+              post: newPost,
+              order: i,
+              path: createPostDto.images[i],
+              imageModelType: ImageModelType.POST_IMAGE,
+            },
+            imageRepository,
+          );
+        }
 
-      return this.getPostModelById(newPost.id);
-    });
+        return newPost.id;
+      },
+    );
+
+    return this.getPostModelById(newPostId);
   }
 
   public async updatePostModel(
