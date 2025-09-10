@@ -1,4 +1,9 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { PostsController } from './posts.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -8,6 +13,7 @@ import { UsersModule } from 'src/users/users.module';
 import { CommonModule } from 'src/common/common.module';
 import { ImageModel } from 'src/common/entities/image.entity';
 import { ImageService } from './image/image.service';
+import { LogMiddleware } from 'src/common/middleware/common.middleware';
 
 @Module({
   imports: [
@@ -22,3 +28,12 @@ import { ImageService } from './image/image.service';
   providers: [PostsService, ImageService],
 })
 export class PostsModule {}
+// export class PostsModule implements NestModule {
+//   configure(consumer: MiddlewareConsumer) {
+//     // post로 시작하는 모든 GET 요청에 대해 LogMiddleware를 적용한다.
+//     consumer.apply(LogMiddleware).forRoutes({
+//       path: 'posts*',
+//       method: RequestMethod.GET,
+//     });
+//   }
+// }

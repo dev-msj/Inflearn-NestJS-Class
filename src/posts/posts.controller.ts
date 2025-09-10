@@ -37,7 +37,7 @@ export class PostsController {
    * - store는 복수형 명사로 작성한다.
    */
   @Get()
-  @UseInterceptors(LogInterceptor)
+  // @UseInterceptors(LogInterceptor)
   // @UseFilters(HttpExceptionFilter)
   public async getPostModels(@Query() paginatePostDto: PaginatePostDto) {
     // return await this.postsService.getAllPostModels();
