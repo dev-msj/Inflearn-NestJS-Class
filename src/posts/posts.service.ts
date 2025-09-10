@@ -76,6 +76,17 @@ export class PostsService {
   }
 
   // TypeORM 0.3 이상부터는 datasource의 transaction()을 통해 트랜잭션을 처리한다.
+  /**
+   * 의견
+   *
+   * 강의 내용 상에서는 datasource의 queryRunner를 통해 트랜잭션을 처리하도록 구현한다.
+   * 그리고 이 방식을 일반화하기 위해 Interceptor로 datasource의 queryRunner로 트랜잭션을
+   * 관리하는 로직을 분리한다.
+   * 하지만 이러한 방식은 DB 접근에 대한 책임을 Service뿐만 아니라 Interceptor도 함께 가지게 된다.
+   * 이 방식은 SRP 원칙에 어긋나며, 테스트 복잡도 역시 증가시킨다.
+   * 뿐만 아니라 Service도 DB 접근에 직접적인 책임을 가지지 못하도록
+   * DB 관련 로직을 Repository 레이어로 분리해야 한다.
+   */
   public async createPostModel(
     authorId: number,
     createPostDto: CreatePostDto,

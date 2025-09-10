@@ -22,6 +22,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PaginatePostDto } from './dto/paginate-post.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { LogInterceptor } from 'src/common/interceptor/log.interceptor';
 
 @Controller('posts')
 export class PostsController {
@@ -34,6 +35,7 @@ export class PostsController {
    * - store는 복수형 명사로 작성한다.
    */
   @Get()
+  @UseInterceptors(LogInterceptor)
   public async getPostModels(@Query() paginatePostDto: PaginatePostDto) {
     // return await this.postsService.getAllPostModels();
     return await this.postsService.paginatePosts(paginatePostDto);
