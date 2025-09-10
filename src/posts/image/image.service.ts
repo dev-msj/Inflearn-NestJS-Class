@@ -27,7 +27,7 @@ export class ImageService {
     );
 
     try {
-      promises.access(tempImagePath); // 파일이 존재하는지 확인
+      await promises.access(tempImagePath); // 파일이 존재하는지 확인
     } catch (e) {
       throw new BadRequestException('존재하지 않는 파일입니다.');
     }
