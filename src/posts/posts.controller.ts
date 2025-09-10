@@ -10,6 +10,7 @@ import {
   Post,
   Put,
   Query,
+  UseFilters,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { PaginatePostDto } from './dto/paginate-post.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LogInterceptor } from 'src/common/interceptor/log.interceptor';
+import { HttpExceptionFilter } from 'src/common/exception-filter/http.exception-filter';
 
 @Controller('posts')
 export class PostsController {
@@ -36,6 +38,7 @@ export class PostsController {
    */
   @Get()
   @UseInterceptors(LogInterceptor)
+  // @UseFilters(HttpExceptionFilter)
   public async getPostModels(@Query() paginatePostDto: PaginatePostDto) {
     // return await this.postsService.getAllPostModels();
     return await this.postsService.paginatePosts(paginatePostDto);
