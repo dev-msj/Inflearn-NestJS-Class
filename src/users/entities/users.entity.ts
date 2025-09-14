@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, ManyToMany, OneToMany } from 'typeorm';
 import { RolesEnum } from '../const/rules.enum';
 import { PostsModel } from 'src/posts/entities/posts.entity';
 import { BaseModel } from 'src/common/entities/base.entity';
@@ -7,6 +7,8 @@ import { lengthValidationMessage } from 'src/common/validation-message/length-va
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
 import { emailValidationMessage } from 'src/common/validation-message/email-validation.message';
 import { Exclude, Expose } from 'class-transformer';
+import { ChatsModel } from 'src/chats/entities/chats.entity';
+import { MessagesModel } from 'src/chats/messages/entities/messages.entity';
 
 @Entity()
 // @Exclude() // 클래스의 모든 프로퍼티를 응답에서 제외하도록 설정
@@ -61,4 +63,10 @@ export class UsersModel extends BaseModel {
 
   @OneToMany(() => PostsModel, (post) => post.author, { nullable: true })
   posts: PostsModel[];
+
+  @ManyToMany(() => ChatsModel, (chat) => chat.users)
+  chats: ChatsModel[];
+
+  @OneToMany(() => MessagesModel, (message) => message.author)
+  messages: MessagesModel[];
 }

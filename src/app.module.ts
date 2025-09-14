@@ -1,4 +1,10 @@
-import { ClassSerializerInterceptor, MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PostsModule } from './posts/posts.module';
@@ -21,6 +27,9 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { PUBLIC_FOLDER_PATH } from './common/const/path.const';
 import { ImageModel } from './common/entities/image.entity';
 import { LogMiddleware } from './common/middleware/common.middleware';
+import { ChatsModule } from './chats/chats.module';
+import { ChatsModel } from './chats/entities/chats.entity';
+import { MessagesModel } from './chats/messages/entities/messages.entity';
 
 @Module({
   imports: [
@@ -44,7 +53,13 @@ import { LogMiddleware } from './common/middleware/common.middleware';
         username: configService.get<string>(ENV_DB_USERNAME_KEY),
         password: configService.get<string>(ENV_DB_PASSWORD_KEY),
         database: configService.get<string>(ENV_DB_NAME_KEY),
-        entities: [PostsModel, UsersModel, ImageModel],
+        entities: [
+          PostsModel,
+          UsersModel,
+          ImageModel,
+          ChatsModel,
+          MessagesModel,
+        ],
         synchronize: true,
       }),
     }),
@@ -64,6 +79,7 @@ import { LogMiddleware } from './common/middleware/common.middleware';
     PostsModule,
     AuthModule,
     CommonModule,
+    ChatsModule,
   ],
   controllers: [AppController],
   providers: [
