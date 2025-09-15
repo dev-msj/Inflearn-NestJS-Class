@@ -94,29 +94,39 @@ export class ChatsGateway implements OnGatewayConnection {
 
     const message = await this.messagesService.createMessage(createMessagesDto);
 
-    // 0. server에 연결된 모든 client들에게 메시지 전송
-    this.server.emit('receive_message', message.message + ' from server');
+    // 0. server에 연결된 모든 client들에게 브로드캐스트
+    this.server.emit(
+      'receive_message',
+      message.message + ' - broadcast from server',
+    );
 
     // 1. 메시지를 보낸 client에게만 응답
-    socket.emit('ack', 'Message received');
+    socket.emit('ack', ' - response only to requester in socket');
 
     // 2. 요청자를 제외한 모든 client들에게 브로드캐스트
     socket.broadcast.emit(
       'broadcast_all',
-      message.message + ' from broadcast all',
+      message.message + ' - broadcast from socket except requester',
     );
 
     // 3. Server 객체에서 특정 방에 브로드캐스트
     // 해당 방에 있는 모든 client들에게 메시지가 전송된다. (요청한 client 포함)
     this.server
       .in(`chat_${message.chat.id}`)
-      .emit('receive_chat_server', message.message + ' from chat server');
+      .emit(
+        'receive_chat_server',
+        message.message + ' - broadcast from server to all clients in a room',
+      );
 
     // 4. Socket 객체에서 특정 방에 브로드캐스트
     // 해당 방에 있는 모든 client들에게 메시지가 전송된다. (요청한 client 제외)
     socket
       .to(`chat_${message.chat.id}`)
-      .emit('receive_chat_socket', message.message + ' from chat socket');
+      .emit(
+        'receive_chat_socket',
+        message.message +
+          ' - broadcast from socket to room to all clients except requester',
+      );
 
     /**
      * to()와 in()의 차이점
@@ -124,8 +134,10 @@ export class ChatsGateway implements OnGatewayConnection {
      * 이 2개의 메서드는 기능적으로는 동일하다.
      * 하지만 메서드가 굳이 2개로 나뉘어지는 것은 의미론적 차이가 있기 때문이다.
      *
-     * in(): "~안에 있는" 이라는 의미로, 특정 범위나 컨텍스트 내에서의 작업을 표현
-     * to(): "~에게" 라는 의미로, 특정 대상에게 전달한다는 개념을 표현
+     * in(): "~안에 있는" 이라는 의미로, 특정 범위나 컨텍스트 내에서의 작업을 표현.
+     *       ex) Server가 Room 안의 모든 Client들에게 메시지를 보낸다.
+     * to(): "~에게" 라는 의미로, 특정 대상에게 전달한다는 개념을 표현.
+     *      ex) Server가 Client의 요청에 의해 요청자를 제외한 Room 안의 모든 Client들에게 메시지를 보낸다.
      *
      * 둘 다 같은 결과를 가져오지만, 코드의 의도를 더 명확하게 표현할 수 있다.
      */

@@ -1,4 +1,4 @@
-# Socket.IO와 Websocket 개념 정리
+# Websocket과 SocketIO 개념 정리
 
 ## Websocket이란?
 
@@ -184,8 +184,9 @@
 
 - **Client**는 직접 Broadcast할 수 없으며, 반드시 *Server에게 요청*해야 한다.
 - **Server**는 Client 요청을 받아 Broadcast하며, *요청자인 Client는 수신자에서 제외*된다.
+- **Server**가 직접 Broadbast할 경우, 제외없이 모든 Client에게 전송한다.
 - Broadcast의 대상은 **Namespace 안의 Client들**까지만 가능하다.
-- `to({room name})`을 활용해 **Room 안의 Client들**에게만 Broadcast 할 수도 있다.
+- `to({room name})`을 활용해 **Room 안의 Client들**에게만 Broadcast 하도록 제한할 수 있다.
 
 ### 예시 케이스
 
