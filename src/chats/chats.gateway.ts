@@ -2,6 +2,8 @@ import {
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
+  OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -13,14 +15,42 @@ import { ChatsService } from './chats.service';
 import { EnterChatDto } from './dto/enter-chat.dto';
 import { CreateMessagesDto } from './messages/dto/create-messages.dto';
 import { MessagesService } from './messages/entities/messages.service';
+import {
+  UseFilters,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
+import { SocketCatchHttpExceptionFilter } from 'src/common/exception-filter/socket-catch-http.exception-filter';
+import { SocketBearerTokenGuard } from 'src/auth/guard/socket/socket-bearer-token.guard';
+import { UsersModel } from 'src/users/entities/users.entity';
+import { UsersService } from 'src/users/users.service';
+import { AuthService } from 'src/auth/auth.service';
 
 // ws://localhost:3000/chats
 @WebSocketGateway({ namespace: 'chats' })
-export class ChatsGateway implements OnGatewayConnection {
+export class ChatsGateway
+  implements OnGatewayConnection, OnGatewayInit, OnGatewayDisconnect
+{
   constructor(
     private readonly chatsService: ChatsService,
     private readonly messagesService: MessagesService,
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
   ) {}
+
+  // OnGatewayDisconnect 인터페이스 구현
+  // Client와의 연결이 끊어졌을 때 실행되는 메서드
+  handleDisconnect(socket: Socket) {
+    console.log(`on disconnect called: ${socket.id}`);
+  }
+
+  // OnGatewayInit 인터페이스 구현
+  // Server를 Inject 받을 때 실행되는 메서드
+  // Gateway가 초기화 됐을 때 실행할 수 있는 메서드
+  afterInit(server: Server) {
+    console.log('WebSocket Gateway Initialized');
+  }
 
   // const io = Server(3000);
   // => 생성된 서버 객체를 주입 받은 변수
@@ -29,25 +59,88 @@ export class ChatsGateway implements OnGatewayConnection {
 
   // io.on('connection', () => {})
   // => client와의 연결을 위한 이벤트 리스너
-  handleConnection(socket: Socket) {
+  async handleConnection(socket: Socket & { user: UsersModel }) {
     console.log(`on connect called: ${socket.id}`);
+
+    /**
+     * 각각의 이벤트 리스너에 Guard를 사용한 토큰 인증 방식에는 문제가 있다.
+     * Socket 통신은 Header의 값이 최초 연결 이후 변경할 수 없어서
+     * 토큰이 만료되었을 때 재발급 받은 토큰으로 변경할 수 없기 때문이다.
+     * 따라서 매번 토큰 갱신을 위해 연결을 끊고 다시 연결하는 방식을 사용해야 한다.
+     *
+     * 이러한 문제를 해결하기 위해서는
+     * handleConnection 메서드에서 토큰을 검증하는 방식을 사용하여
+     * 소켓이 연결될 때 한 번만 토큰을 검증하고,
+     * 이후에는 토큰이 만료되더라도 연결이 유지되도록 할 수 있다.
+     */
+    const headers = socket.handshake.headers;
+    const rawToken = headers['authorization'];
+
+    if (!rawToken) {
+      socket.disconnect();
+    }
+
+    // 기본적으로 HttpException을 던지도록 구현되어 있으므로
+    // WsException으로 변환하여 던져야 한다.
+    try {
+      const token = this.authService.extractTokenFromHeader(rawToken, true);
+
+      const payload = this.authService.verifyToken(token);
+      const user = await this.usersService.getUserByEmail(payload.email);
+
+      socket.user = user;
+    } catch (e) {
+      socket.disconnect();
+    }
   }
 
   // 유저들의 ID 목록을 받아 DB에 채팅방 정보 생성
   @SubscribeMessage('create_chat')
+  /**
+   * Socket은 main에서 선언된 Global Validation Pipe가 적용되지 않는다.
+   * 따라서 각 SubscribeMessage 이벤트마다
+   * 개별적으로 Validation Pipe를 적용해 주어야 한다.
+   */
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  )
+  // nestjs는 기본적으로 HttpException을 던지도록 구현되어 있으므로
+  // Filter를 통해 WsException으로 변환하여 던져야 한다.
+  @UseFilters(SocketCatchHttpExceptionFilter)
+  // Socket 통신에서 JWT 토큰을 검증하기 위한 Guard
+  // @UseGuards(SocketBearerTokenGuard)
   async createChat(
     @MessageBody() createChatDto: CreateChatDto,
-    @ConnectedSocket() socket: Socket,
+    @ConnectedSocket() socket: Socket & { user: UsersModel },
   ) {
     await this.chatsService.createChat(createChatDto);
   }
 
   @SubscribeMessage('enter_chat')
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  )
+  @UseFilters(SocketCatchHttpExceptionFilter)
+  // @UseGuards(SocketBearerTokenGuard)
   async enterChat(
     // join할 채팅방 ID 배열
     @MessageBody() enterChatDto: EnterChatDto,
     // Server와 연결된 Socket 객체
-    @ConnectedSocket() socket: Socket,
+    @ConnectedSocket() socket: Socket & { user: UsersModel },
   ) {
     // DB에 존재하는 chatId인지 확인
     for (const chatId of enterChatDto.chatIds) {
@@ -75,9 +168,21 @@ export class ChatsGateway implements OnGatewayConnection {
    * 이벤트 리스너를 선언적으로 정의.
    */
   @SubscribeMessage('send_message')
-  async chatMessage(
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  )
+  @UseFilters(SocketCatchHttpExceptionFilter)
+  // @UseGuards(SocketBearerTokenGuard)
+  async sendMessage(
     @MessageBody() createMessagesDto: CreateMessagesDto,
-    @ConnectedSocket() socket: Socket,
+    @ConnectedSocket() socket: Socket & { user: UsersModel },
   ) {
     const chatExists = await this.chatsService.checkIfChatExists(
       createMessagesDto.chatId,
@@ -92,7 +197,10 @@ export class ChatsGateway implements OnGatewayConnection {
     // client로부터 받은 메시지 출력
     console.log(createMessagesDto.message + ' from client');
 
-    const message = await this.messagesService.createMessage(createMessagesDto);
+    const message = await this.messagesService.createMessage(
+      createMessagesDto,
+      socket.user.id,
+    );
 
     // 0. server에 연결된 모든 client들에게 브로드캐스트
     this.server.emit(
@@ -105,7 +213,7 @@ export class ChatsGateway implements OnGatewayConnection {
 
     // 2. 요청자를 제외한 모든 client들에게 브로드캐스트
     socket.broadcast.emit(
-      'broadcast_all',
+      'broadcast_from_socket',
       message.message + ' - broadcast from socket except requester',
     );
 
@@ -114,7 +222,7 @@ export class ChatsGateway implements OnGatewayConnection {
     this.server
       .in(`chat_${message.chat.id}`)
       .emit(
-        'receive_chat_server',
+        'broadcast_from_server_to_room',
         message.message + ' - broadcast from server to all clients in a room',
       );
 
@@ -123,7 +231,7 @@ export class ChatsGateway implements OnGatewayConnection {
     socket
       .to(`chat_${message.chat.id}`)
       .emit(
-        'receive_chat_socket',
+        'broadcast_from_socket_to_room',
         message.message +
           ' - broadcast from socket to room to all clients except requester',
       );

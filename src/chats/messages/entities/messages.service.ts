@@ -14,10 +14,13 @@ export class MessagesService {
     private readonly messagesRepository: Repository<MessagesModel>,
   ) {}
 
-  public async createMessage(createMessagesDto: CreateMessagesDto) {
+  public async createMessage(
+    createMessagesDto: CreateMessagesDto,
+    authorId: number,
+  ) {
     const messageEntity = this.messagesRepository.create({
       chat: { id: createMessagesDto.chatId },
-      author: { id: createMessagesDto.authorId },
+      author: { id: authorId },
       message: createMessagesDto.message,
     });
     const message = await this.messagesRepository.save(messageEntity);
