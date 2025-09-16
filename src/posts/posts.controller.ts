@@ -62,7 +62,7 @@ export class PostsController {
   public async getPostModel(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<PostsModel> {
-    return await this.postsService.getPostModelById(id);
+    return await this.postsService.getPostModelByIdOrUser(id);
   }
 
   /**

@@ -26,6 +26,7 @@ import { LogMiddleware } from 'src/common/middleware/common.middleware';
   ],
   controllers: [PostsController],
   providers: [PostsService, ImageService],
+  exports: [PostsService],
 })
 export class PostsModule {}
 // export class PostsModule implements NestModule {

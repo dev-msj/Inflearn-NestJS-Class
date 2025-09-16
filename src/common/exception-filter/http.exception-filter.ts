@@ -21,7 +21,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     response.status(status).json({
       statusCode: status,
       message: exception.message,
-      timestamp: new Date().toLocaleDateString('kr'),
+      timestamp: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }),
       path: request.url,
     });
   }

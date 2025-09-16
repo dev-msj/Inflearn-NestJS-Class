@@ -2,13 +2,14 @@ import { DEFAULT_POST_FIND_OPTIONS } from './const/default-post-find-options.con
 import { CreatePostDto } from './dto/create-post.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import { PostsModel } from './entities/posts.entity';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PaginatePostDto } from './dto/paginate-post.dto';
 import { CommonService } from 'src/common/common.service';
 import { ImageModel, ImageModelType } from 'src/common/entities/image.entity';
 import { ImageService } from './image/image.service';
+import { UsersModel } from 'src/users/entities/users.entity';
 
 /**
  * NestJS는 크게 Controller, Provider, Module 3가지 형태로 구성되어 있다.
@@ -26,6 +27,10 @@ export class PostsService {
     private readonly imageService: ImageService,
     private readonly commonService: CommonService,
   ) {}
+
+  public async checkPostModelExists(id: number): Promise<boolean> {
+    return await this.postsRepository.existsBy({ id });
+  }
 
   public async getAllPostModels(): Promise<PostsModel[]> {
     return await this.postsRepository.find({
@@ -59,17 +64,23 @@ export class PostsService {
     }
   }
 
-  public async getPostModelById(id: number): Promise<PostsModel> {
+  public async getPostModelByIdOrUser(
+    id: number,
+    user?: UsersModel,
+  ): Promise<PostsModel> {
     // id에 해당하는 PostModel을 찾아 반환한다.
+    const where: FindOptionsWhere<PostsModel> = { id };
+    if (user) {
+      where.author = { id: user.id };
+    }
+
     const post = await this.postsRepository.findOne({
+      where,
       ...DEFAULT_POST_FIND_OPTIONS,
-      where: {
-        id,
-      },
     });
 
     if (!post) {
-      throw new NotFoundException();
+      throw new NotFoundException('존재하지 않는 Post입니다.');
     }
 
     return post;
@@ -126,7 +137,7 @@ export class PostsService {
       },
     );
 
-    return this.getPostModelById(newPostId);
+    return this.getPostModelByIdOrUser(newPostId);
   }
 
   public async updatePostModel(
@@ -135,7 +146,7 @@ export class PostsService {
   ): Promise<void> {
     const { title, content } = updatePostDto;
 
-    const post = await this.getPostModelById(id);
+    const post = await this.getPostModelByIdOrUser(id);
 
     if (title) {
       post.title = title;
@@ -157,7 +168,7 @@ export class PostsService {
     // 1) 만약에 데이터가 존재하지 않는다면 (id 기준으로) 새로 생성한다.
     // 2) 만약에 데이터가 존재한다면 (같은 id의 값이 존재한다면) 존재하던 값을 업데이트 한다.
 
-    const post = await this.getPostModelById(id);
+    const post = await this.getPostModelByIdOrUser(id);
 
     post.title = updatePostDto.title;
     post.content = updatePostDto.content;
@@ -167,7 +178,7 @@ export class PostsService {
   }
 
   public async deletePostModelById(id: number): Promise<number> {
-    const post = await this.getPostModelById(id);
+    const post = await this.getPostModelByIdOrUser(id);
 
     if (!post) {
       throw new NotFoundException();

@@ -9,6 +9,7 @@ import { emailValidationMessage } from 'src/common/validation-message/email-vali
 import { Exclude, Expose } from 'class-transformer';
 import { ChatsModel } from 'src/chats/entities/chats.entity';
 import { MessagesModel } from 'src/chats/messages/entities/messages.entity';
+import { CommentsModel } from 'src/posts/comments/entities/comments.entity';
 
 @Entity()
 // @Exclude() // 클래스의 모든 프로퍼티를 응답에서 제외하도록 설정
@@ -69,4 +70,7 @@ export class UsersModel extends BaseModel {
 
   @OneToMany(() => MessagesModel, (message) => message.author)
   messages: MessagesModel[];
+
+  @OneToMany(() => CommentsModel, (comment) => comment.author)
+  comments: CommentsModel[];
 }
