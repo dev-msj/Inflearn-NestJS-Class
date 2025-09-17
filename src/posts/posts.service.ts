@@ -28,8 +28,16 @@ export class PostsService {
     private readonly commonService: CommonService,
   ) {}
 
-  public async checkPostModelExists(id: number): Promise<boolean> {
-    return await this.postsRepository.existsBy({ id });
+  public async checkPostModelExists(
+    id: number,
+    user?: UsersModel,
+  ): Promise<boolean> {
+    const where: FindOptionsWhere<PostsModel> = { id };
+    if (user) {
+      where.author = { id: user.id };
+    }
+
+    return await this.postsRepository.existsBy(where);
   }
 
   public async getAllPostModels(): Promise<PostsModel[]> {
@@ -157,7 +165,7 @@ export class PostsService {
     }
 
     // id에 해당하는 PostModel을 업데이트한다.
-    await this.postsRepository.update(id, post);
+    await this.postsRepository.save(post);
   }
 
   public async upsertPostModel(

@@ -21,13 +21,4 @@ export class UsersController {
   public async getAllUsers() {
     return await this.usersService.getAllUsers();
   }
-
-  // @Post()
-  // public async createUser(
-  //   @Body('nickname') nickname: string,
-  //   @Body('email') email: string,
-  //   @Body('password') password: string,
-  // ) {
-  //   return await this.usersService.createUser({ nickname, email, password });
-  // }
 }

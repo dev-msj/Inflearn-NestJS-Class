@@ -22,6 +22,18 @@ export class CommentsService {
     private readonly postsService: PostsService,
   ) {}
 
+  public async checkCommentModelExists(
+    commentId: number,
+    postId: number,
+    user: UsersModel,
+  ): Promise<boolean> {
+    return await this.commentsRepository.existsBy({
+      id: commentId,
+      author: { id: user.id },
+      post: { id: postId },
+    });
+  }
+
   public async pagination(
     postId: number,
     paginateCommentsDto: PaginateCommentsDto,
@@ -71,7 +83,6 @@ export class CommentsService {
   }
 
   public async updateComment(
-    user: UsersModel,
     postId: number,
     commentId: number,
     updateCommentsDto: UpdateCommentsDto,
@@ -82,7 +93,6 @@ export class CommentsService {
       ...updateCommentsDto,
       id: commentId,
       post: { id: postId },
-      author: { id: user.id },
     });
 
     if (!comment) {

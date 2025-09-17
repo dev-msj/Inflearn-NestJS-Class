@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { CommentsService } from './comments.service';
 import { CreateCommentsDto } from './dto/create-comments.dto';
@@ -14,6 +15,7 @@ import { User } from 'src/users/decorator/user.decorator';
 import { UsersModel } from 'src/users/entities/users.entity';
 import { UpdateCommentsDto } from './dto/update-comments.dto';
 import { IsPublic } from 'src/auth/decorator/is-public.decorator';
+import { IsCommentOwnerOrAdminGuard } from './guard/is-comment-owner-or-admin.guard';
 
 /**
  * 1. entity 생성
@@ -64,14 +66,13 @@ export class CommentsController {
   }
 
   @Patch(':commentId')
+  @UseGuards(IsCommentOwnerOrAdminGuard)
   public async patchComment(
-    @User() user: UsersModel,
     @Param('postId', ParseIntPipe) postId: number,
     @Param('commentId', ParseIntPipe) commentId: number,
     @Body() updateCommentsDto: UpdateCommentsDto,
   ) {
     return await this.commentsService.updateComment(
-      user,
       postId,
       commentId,
       updateCommentsDto,
@@ -79,6 +80,7 @@ export class CommentsController {
   }
 
   @Delete(':commentId')
+  @UseGuards(IsCommentOwnerOrAdminGuard)
   public async deleteComment(
     @User() user: UsersModel,
     @Param('postId', ParseIntPipe) postId: number,

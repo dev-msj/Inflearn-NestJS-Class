@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
@@ -22,6 +23,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles } from 'src/users/decorator/rules.decorator';
 import { RolesEnum } from 'src/users/const/rules.enum';
 import { IsPublic } from 'src/auth/decorator/is-public.decorator';
+import { IsPostOwnerOrAdminGuard } from './guard/is-post-owner-or-admin.guard';
 
 @Controller('posts')
 export class PostsController {
@@ -55,12 +57,12 @@ export class PostsController {
    * - store에서 요청된 resource를 가져온다.
    * - resource는 단수형 명사로 작성한다.
    */
-  @Get(':id')
+  @Get(':postId')
   @IsPublic()
   public async getPostModel(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('postId', ParseIntPipe) postId: number,
   ): Promise<PostsModel> {
-    return await this.postsService.getPostModelByIdOrUser(id);
+    return await this.postsService.getPostModelByIdOrUser(postId);
   }
 
   /**
@@ -83,12 +85,13 @@ export class PostsController {
    * - Body 사용
    * - store에서 요청된 resource를 수정한다.
    */
-  @Patch(':id')
+  @Patch(':postId')
+  @UseGuards(IsPostOwnerOrAdminGuard)
   public async patchPost(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('postId', ParseIntPipe) postId: number,
     @Body() updatePostDto: UpdatePostDto,
   ): Promise<boolean> {
-    await this.postsService.updatePostModel(id, updatePostDto);
+    await this.postsService.updatePostModel(postId, updatePostDto);
 
     return true;
   }
@@ -98,12 +101,13 @@ export class PostsController {
    * - Body 사용
    * - store에서 요청된 resource를 수정하거나 생성한다.
    */
-  @Put(':id')
+  @Put(':postId')
+  @UseGuards(IsPostOwnerOrAdminGuard)
   public async putPost(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('postId', ParseIntPipe) postId: number,
     @Body() updatePostDto: UpdatePostDto,
   ): Promise<PostsModel> {
-    return await this.postsService.upsertPostModel(id, updatePostDto);
+    return await this.postsService.upsertPostModel(postId, updatePostDto);
   }
 
   /**
@@ -111,11 +115,11 @@ export class PostsController {
    * - Body 사용
    * - store에서 요청된 resource를 삭제한다.
    */
-  @Delete(':id')
+  @Delete(':postId')
   @Roles(RolesEnum.ADMIN)
   public async deletePost(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('postId', ParseIntPipe) postId: number,
   ): Promise<number> {
-    return await this.postsService.deletePostModelById(id);
+    return await this.postsService.deletePostModelById(postId);
   }
 }
