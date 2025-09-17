@@ -1,12 +1,7 @@
-import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Get,
-  Post,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { RolesEnum } from './const/rules.enum';
+import { Roles } from './decorator/rules.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -22,6 +17,7 @@ export class UsersController {
    * -> class의 object에서 JSON 포맷으로 변환
    * deserialization -> 역직렬화
    */
+  @Roles(RolesEnum.ADMIN)
   public async getAllUsers() {
     return await this.usersService.getAllUsers();
   }

@@ -60,7 +60,7 @@ export class UsersModel extends BaseModel {
     enum: RolesEnum,
     default: RolesEnum.USER,
   })
-  rule: RolesEnum;
+  role: RolesEnum;
 
   @OneToMany(() => PostsModel, (post) => post.author, { nullable: true })
   posts: PostsModel[];

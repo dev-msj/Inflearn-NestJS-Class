@@ -7,14 +7,13 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
 import { CommentsService } from './comments.service';
 import { CreateCommentsDto } from './dto/create-comments.dto';
 import { User } from 'src/users/decorator/user.decorator';
 import { UsersModel } from 'src/users/entities/users.entity';
-import { AccessTokenGuard } from 'src/auth/guard/access-token.guard';
 import { UpdateCommentsDto } from './dto/update-comments.dto';
+import { IsPublic } from 'src/auth/decorator/is-public.decorator';
 
 /**
  * 1. entity 생성
@@ -34,6 +33,7 @@ export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Get()
+  @IsPublic()
   public async getComments(
     @Param('postId', ParseIntPipe) postId: number,
     @Body() paginateCommentDto,
@@ -42,6 +42,7 @@ export class CommentsController {
   }
 
   @Get(':commentId')
+  @IsPublic()
   public async getComment(
     @Param('postId', ParseIntPipe) postId: number,
     @Param('commentId', ParseIntPipe) commentId: number,
@@ -50,7 +51,6 @@ export class CommentsController {
   }
 
   @Post()
-  @UseGuards(AccessTokenGuard)
   public async postComment(
     @User() user: UsersModel,
     @Param('postId', ParseIntPipe) postId: number,
@@ -64,7 +64,6 @@ export class CommentsController {
   }
 
   @Patch(':commentId')
-  @UseGuards(AccessTokenGuard)
   public async patchComment(
     @User() user: UsersModel,
     @Param('postId', ParseIntPipe) postId: number,
@@ -80,7 +79,6 @@ export class CommentsController {
   }
 
   @Delete(':commentId')
-  @UseGuards(AccessTokenGuard)
   public async deleteComment(
     @User() user: UsersModel,
     @Param('postId', ParseIntPipe) postId: number,

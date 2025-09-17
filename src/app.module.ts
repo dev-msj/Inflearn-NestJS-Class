@@ -14,7 +14,7 @@ import { PostsModel } from './posts/entities/posts.entity';
 import { UsersModel } from './users/entities/users.entity';
 import { AuthModule } from './auth/auth.module';
 import { CommonModule } from './common/common.module';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
   ENV_DB_HOST_KEY,
@@ -32,6 +32,8 @@ import { ChatsModel } from './chats/entities/chats.entity';
 import { MessagesModel } from './chats/messages/entities/messages.entity';
 import { CommentsModule } from './posts/comments/comments.module';
 import { CommentsModel } from './posts/comments/entities/comments.entity';
+import { RolesGuard } from './users/guard/roles.guard';
+import { AccessTokenGuard } from './auth/guard/access-token.guard';
 
 @Module({
   imports: [
@@ -92,6 +94,21 @@ import { CommentsModel } from './posts/comments/entities/comments.entity';
       // ClassSerializerInterceptor를 전역으로 적용
       provide: APP_INTERCEPTOR,
       useClass: ClassSerializerInterceptor,
+    },
+    {
+      // AccessTokenGuard를 전역으로 적용하여 모든 경로가 인증을 필요로 하도록 설정한다.
+      provide: APP_GUARD,
+      useClass: AccessTokenGuard,
+    },
+    {
+      /**
+       * RBAC (Role-Based Access Control, 역할 기반 접근 제어)
+       *
+       * Authentication(인증) 이후 Authorization(인가) 단계로
+       * RolesGuard를 전역으로 적용하여 사용자의 권한을 확인해 접근을 제어한다.
+       */
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

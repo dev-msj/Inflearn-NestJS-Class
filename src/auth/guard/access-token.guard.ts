@@ -13,6 +13,10 @@ export class AccessTokenGuard extends BearerTokenGuard {
 
     const request = context.switchToHttp().getRequest();
 
+    if (request.isPublic) {
+      return true;
+    }
+
     // 2. Access token을 검증한다.
     if (request.tokenType !== 'access') {
       console.log(request.tokenType);

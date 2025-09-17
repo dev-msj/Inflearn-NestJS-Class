@@ -181,7 +181,7 @@ export class PostsService {
     const post = await this.getPostModelByIdOrUser(id);
 
     if (!post) {
-      throw new NotFoundException();
+      throw new NotFoundException('존재하지 않는 Post입니다.');
     }
 
     await this.postsRepository.delete(post.id);

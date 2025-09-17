@@ -6,10 +6,13 @@ import {
 } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { UsersService } from 'src/users/users.service';
+import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_KEY } from '../decorator/is-public.decorator';
 
 @Injectable()
 export class BearerTokenGuard implements CanActivate {
   constructor(
+    private readonly reflector: Reflector,
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
   ) {}
@@ -17,6 +20,16 @@ export class BearerTokenGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // 1. request 객체를 통해 authorization header로부터 토큰을 가져온다.
     const request = context.switchToHttp().getRequest();
+
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      request.isPublic = isPublic;
+
+      return true;
+    }
 
     // 2. 헤더로부터 토큰을 추출한다.
     const rawToken = request.headers['authorization'];

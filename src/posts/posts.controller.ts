@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Delete,
   Get,
   Param,
@@ -10,21 +9,19 @@ import {
   Post,
   Put,
   Query,
-  UseFilters,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { PostsModel } from './entities/posts.entity';
-import { AccessTokenGuard } from 'src/auth/guard/access-token.guard';
 import { User } from 'src/users/decorator/user.decorator';
 import { UsersModel } from 'src/users/entities/users.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PaginatePostDto } from './dto/paginate-post.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { LogInterceptor } from 'src/common/interceptor/log.interceptor';
-import { HttpExceptionFilter } from 'src/common/exception-filter/http.exception-filter';
+import { Roles } from 'src/users/decorator/rules.decorator';
+import { RolesEnum } from 'src/users/const/rules.enum';
+import { IsPublic } from 'src/auth/decorator/is-public.decorator';
 
 @Controller('posts')
 export class PostsController {
@@ -37,6 +34,7 @@ export class PostsController {
    * - store는 복수형 명사로 작성한다.
    */
   @Get()
+  @IsPublic()
   // @UseInterceptors(LogInterceptor)
   // @UseFilters(HttpExceptionFilter)
   public async getPostModels(@Query() paginatePostDto: PaginatePostDto) {
@@ -45,7 +43,6 @@ export class PostsController {
   }
 
   @Post('generate')
-  @UseGuards(AccessTokenGuard)
   public async generatePostModels(@User() user: UsersModel) {
     await this.postsService.generatePosts(user.id);
 
@@ -59,6 +56,7 @@ export class PostsController {
    * - resource는 단수형 명사로 작성한다.
    */
   @Get(':id')
+  @IsPublic()
   public async getPostModel(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<PostsModel> {
@@ -71,7 +69,6 @@ export class PostsController {
    * - store에 새로운 resource를 생성한다.
    */
   @Post()
-  @UseGuards(AccessTokenGuard)
   @UseInterceptors(FileInterceptor('image'))
   public async postPostModel(
     @User('id') userId: number,
@@ -115,6 +112,7 @@ export class PostsController {
    * - store에서 요청된 resource를 삭제한다.
    */
   @Delete(':id')
+  @Roles(RolesEnum.ADMIN)
   public async deletePost(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<number> {
