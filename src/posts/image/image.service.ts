@@ -16,10 +16,8 @@ export class ImageService {
 
   public async createPostImage(
     createImageDto: CreateImageDto,
-    repository?: Repository<ImageModel>,
+    imageRepository: Repository<ImageModel> = this.imageRepository,
   ): Promise<ImageModel> {
-    const repo = this.getRepository(repository);
-
     // image 이름을 기반으로 파일의 경로를 생성한다
     const tempImagePath = join(
       TEMP_IMAGE_PATH,
@@ -37,15 +35,11 @@ export class ImageService {
       createImageDto.path, // POSTS_IMAGE_PATH에 저장될 파일 이름
     );
 
-    const result = await repo.save({ ...createImageDto });
+    const result = await imageRepository.save({ ...createImageDto });
 
     // TEMP_IMAGE_PATH에 저장된 파일을 POSTS_IMAGE_PATH로 이동시킨다.
     await promises.rename(tempImagePath, postImagePath);
 
     return result;
-  }
-
-  private getRepository(repository?: Repository<ImageModel>) {
-    return repository ? repository : this.imageRepository;
   }
 }

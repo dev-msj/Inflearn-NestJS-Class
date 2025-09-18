@@ -2,7 +2,12 @@ import { DEFAULT_POST_FIND_OPTIONS } from './const/default-post-find-options.con
 import { CreatePostDto } from './dto/create-post.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  FindOptionsWhere,
+  Repository,
+} from 'typeorm';
 import { PostsModel } from './entities/posts.entity';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PaginatePostDto } from './dto/paginate-post.dto';
@@ -47,11 +52,6 @@ export class PostsService {
   }
 
   public async paginatePosts(paginatePostDto: PaginatePostDto) {
-    // if (paginatePostDto.page) {
-    //   return await this.pagePaginatePosts(paginatePostDto);
-    // } else {
-    //   return await this.cursorPaginatePosts(paginatePostDto);
-    // }
     return await this.commonService.paginate<PostsModel>(
       paginatePostDto,
       this.postsRepository,
@@ -75,6 +75,7 @@ export class PostsService {
   public async getPostModelByIdOrUser(
     id: number,
     user?: UsersModel,
+    postsRepository: Repository<PostsModel> = this.postsRepository,
   ): Promise<PostsModel> {
     // id에 해당하는 PostModel을 찾아 반환한다.
     const where: FindOptionsWhere<PostsModel> = { id };
@@ -82,7 +83,7 @@ export class PostsService {
       where.author = { id: user.id };
     }
 
-    const post = await this.postsRepository.findOne({
+    const post = await postsRepository.findOne({
       where,
       ...DEFAULT_POST_FIND_OPTIONS,
     });
@@ -112,7 +113,7 @@ export class PostsService {
   ): Promise<PostsModel> {
     // entityManager는 트랜잭션이 성공했을 때에만 커밋된다.
     const newPostId = await this.dataSource.transaction(
-      async (entityManager) => {
+      async (entityManager: EntityManager) => {
         // 트랜잭션의 컨텍스트에서 사용할 Repository를 가져온다.
         const postsRepository = entityManager.getRepository(PostsModel);
         const imageRepository = entityManager.getRepository(ImageModel);
@@ -195,5 +196,19 @@ export class PostsService {
     await this.postsRepository.delete(post.id);
 
     return post.id;
+  }
+
+  public async incrementCommentCount(
+    postId: number,
+    postsRepository: Repository<PostsModel> = this.postsRepository,
+  ) {
+    await postsRepository.increment({ id: postId }, 'commentCount', 1);
+  }
+
+  public async decrementCommentCount(
+    postId: number,
+    postsRepository: Repository<PostsModel> = this.postsRepository,
+  ) {
+    await postsRepository.decrement({ id: postId }, 'commentCount', 1);
   }
 }

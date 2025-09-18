@@ -1,12 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { UsersModel } from './entities/users.entity';
 import { UserFollowersModel } from './entities/user-followers.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(UsersModel)
     private readonly usersRepository: Repository<UsersModel>,
     @InjectRepository(UserFollowersModel)
@@ -82,32 +83,76 @@ export class UsersService {
   }
 
   public async confirmFollow(followerId: number, followeeId: number) {
-    const followRelation = await this.userFollowersRepository.findOne({
-      where: {
-        follower: { id: followerId },
-        followee: { id: followeeId },
-      },
-      relations: { follower: true, followee: true },
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
+      const userFollowersRepository = manager.getRepository(UserFollowersModel);
+      const usersRepository = manager.getRepository(UsersModel);
+
+      const followRelation = await userFollowersRepository.findOne({
+        where: {
+          follower: { id: followerId },
+          followee: { id: followeeId },
+        },
+        relations: { follower: true, followee: true },
+      });
+
+      if (!followRelation) {
+        throw new BadRequestException('존재하지 않는 팔로우 요청입니다.');
+      }
+
+      await userFollowersRepository.save({
+        ...followRelation,
+        isConfirmed: true,
+      });
+
+      await this.incrementFollowerCount(followeeId, usersRepository);
+      await this.incrementFolloweeCount(followerId, usersRepository);
+
+      return true;
     });
-
-    if (!followRelation) {
-      throw new BadRequestException('존재하지 않는 팔로우 요청입니다.');
-    }
-
-    await this.userFollowersRepository.save({
-      ...followRelation,
-      isConfirmed: true,
-    });
-
-    return true;
   }
 
   public async deleteFollow(followerId: number, followeeId: number) {
-    await this.userFollowersRepository.delete({
-      follower: { id: followerId },
-      followee: { id: followeeId },
-    });
+    return await this.dataSource.transaction(async (manager: EntityManager) => {
+      const userFollowersRepository = manager.getRepository(UserFollowersModel);
+      const usersRepository = manager.getRepository(UsersModel);
 
-    return true;
+      await userFollowersRepository.delete({
+        follower: { id: followerId },
+        followee: { id: followeeId },
+      });
+
+      await this.decrementFollowerCount(followeeId, usersRepository);
+      await this.decrementFolloweeCount(followerId, usersRepository);
+
+      return true;
+    });
+  }
+
+  private async incrementFollowerCount(
+    userId: number,
+    usersRepository: Repository<UsersModel>,
+  ) {
+    await usersRepository.increment({ id: userId }, 'followerCount', 1);
+  }
+
+  private async decrementFollowerCount(
+    userId: number,
+    usersRepository: Repository<UsersModel>,
+  ) {
+    await usersRepository.decrement({ id: userId }, 'followerCount', 1);
+  }
+
+  private async incrementFolloweeCount(
+    userId: number,
+    usersRepository: Repository<UsersModel>,
+  ) {
+    await usersRepository.increment({ id: userId }, 'followeeCount', 1);
+  }
+
+  private async decrementFolloweeCount(
+    userId: number,
+    usersRepository: Repository<UsersModel>,
+  ) {
+    await usersRepository.decrement({ id: userId }, 'followeeCount', 1);
   }
 }

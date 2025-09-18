@@ -6,16 +6,23 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CommentsModel } from './entities/comments.entity';
-import { EntityNotFoundError, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  EntityNotFoundError,
+  Repository,
+} from 'typeorm';
 import { CommonService } from 'src/common/common.service';
 import { PaginateCommentsDto } from './dto/paginate-comments.dto';
 import { UsersModel } from 'src/users/entities/users.entity';
 import { UpdateCommentsDto } from './dto/update-comments.dto';
 import { PostsService } from '../posts.service';
+import { PostsModel } from '../entities/posts.entity';
 
 @Injectable()
 export class CommentsService {
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(CommentsModel)
     private readonly commentsRepository: Repository<CommentsModel>,
     private readonly commonService: CommonService,
@@ -71,15 +78,28 @@ export class CommentsService {
     postId: number,
     createCommentsDto: CreateCommentsDto,
   ): Promise<CommentsModel> {
-    const post = await this.postsService.getPostModelByIdOrUser(postId, user);
+    return await this.dataSource.transaction(
+      async (entityManager: EntityManager) => {
+        const postRepository = entityManager.getRepository(PostsModel);
+        const commentsRepository = entityManager.getRepository(CommentsModel);
 
-    const newComment = this.commentsRepository.create({
-      ...createCommentsDto,
-      author: user,
-      post,
-    });
+        const post = await this.postsService.getPostModelByIdOrUser(
+          postId,
+          user,
+          postRepository,
+        );
 
-    return await this.commentsRepository.save(newComment);
+        await this.postsService.incrementCommentCount(postId, postRepository);
+
+        const newComment = commentsRepository.create({
+          ...createCommentsDto,
+          author: { id: user.id },
+          post: { id: post.id },
+        });
+
+        return await this.commentsRepository.save(newComment);
+      },
+    );
   }
 
   public async updateComment(
@@ -106,19 +126,34 @@ export class CommentsService {
     user: UsersModel,
     postId: number,
     commentId: number,
-  ): Promise<void> {
-    const comment = await this.commentsRepository.findOne({
-      where: { id: commentId, post: { id: postId }, author: { id: user.id } },
-    });
+  ): Promise<boolean> {
+    return await this.dataSource.transaction(
+      async (entityManager: EntityManager) => {
+        const postRepository = entityManager.getRepository(PostsModel);
+        const commentsRepository = entityManager.getRepository(CommentsModel);
 
-    if (!comment) {
-      throw new BadRequestException('댓글을 찾을 수 없습니다.');
-    }
+        const comment = await commentsRepository.findOne({
+          where: {
+            id: commentId,
+            post: { id: postId },
+            author: { id: user.id },
+          },
+        });
 
-    await this.commentsRepository.delete({
-      id: commentId,
-      post: { id: postId },
-      author: { id: user.id },
-    });
+        if (!comment) {
+          throw new BadRequestException('댓글을 찾을 수 없습니다.');
+        }
+
+        await commentsRepository.delete({
+          id: commentId,
+          post: { id: postId },
+          author: { id: user.id },
+        });
+
+        await this.postsService.decrementCommentCount(postId, postRepository);
+
+        return true;
+      },
+    );
   }
 }
