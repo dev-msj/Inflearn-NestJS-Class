@@ -19,7 +19,6 @@ export class AccessTokenGuard extends BearerTokenGuard {
 
     // 2. Access token을 검증한다.
     if (request.tokenType !== 'access') {
-      console.log(request.tokenType);
       throw new UnauthorizedException('액세스 토큰이 아닙니다.');
     }
 

@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToMany, OneToMany } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
 import { RolesEnum } from '../const/rules.enum';
 import { PostsModel } from 'src/posts/entities/posts.entity';
 import { BaseModel } from 'src/common/entities/base.entity';
@@ -6,10 +6,11 @@ import { IsEmail, IsString, Length } from 'class-validator';
 import { lengthValidationMessage } from 'src/common/validation-message/length-validation.message';
 import { stringValidationMessage } from 'src/common/validation-message/string-validation.message';
 import { emailValidationMessage } from 'src/common/validation-message/email-validation.message';
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude } from 'class-transformer';
 import { ChatsModel } from 'src/chats/entities/chats.entity';
 import { MessagesModel } from 'src/chats/messages/entities/messages.entity';
 import { CommentsModel } from 'src/posts/comments/entities/comments.entity';
+import { UserFollowersModel } from './user-followers.entity';
 
 @Entity()
 // @Exclude() // 클래스의 모든 프로퍼티를 응답에서 제외하도록 설정
@@ -73,4 +74,20 @@ export class UsersModel extends BaseModel {
 
   @OneToMany(() => CommentsModel, (comment) => comment.author)
   comments: CommentsModel[];
+
+  // 내가 팔로우 하고 있는 사람들
+  // @ManyToMany(() => UsersModel, (user) => user.followees)
+  @OneToMany(
+    () => UserFollowersModel,
+    (userFollowersModel) => userFollowersModel.follower,
+  )
+  @JoinTable()
+  followers: UserFollowersModel[];
+
+  // 나를 팔로우 하고 있는 사람들
+  @OneToMany(
+    () => UserFollowersModel,
+    (userFollowersModel) => userFollowersModel.followee,
+  )
+  followees: UserFollowersModel[];
 }

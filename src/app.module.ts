@@ -34,6 +34,7 @@ import { CommentsModule } from './posts/comments/comments.module';
 import { CommentsModel } from './posts/comments/entities/comments.entity';
 import { RolesGuard } from './users/guard/roles.guard';
 import { AccessTokenGuard } from './auth/guard/access-token.guard';
+import { UserFollowersModel } from './users/entities/user-followers.entity';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { AccessTokenGuard } from './auth/guard/access-token.guard';
           ChatsModel,
           MessagesModel,
           CommentsModel,
+          UserFollowersModel,
         ],
         synchronize: true,
       }),

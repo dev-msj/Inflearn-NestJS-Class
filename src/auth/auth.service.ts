@@ -65,7 +65,6 @@ export class AuthService {
     const split = decoded.split(':');
 
     if (split.length !== 2) {
-      console.log('유효하지 않은 ');
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
     }
 

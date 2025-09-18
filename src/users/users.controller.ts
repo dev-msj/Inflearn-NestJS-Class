@@ -1,7 +1,20 @@
-import { Controller, Get } from '@nestjs/common';
+import {
+  Controller,
+  DefaultValuePipe,
+  Delete,
+  Get,
+  Param,
+  ParseBoolPipe,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { RolesEnum } from './const/rules.enum';
 import { Roles } from './decorator/rules.decorator';
+import { User } from './decorator/user.decorator';
+import { UsersModel } from './entities/users.entity';
 
 @Controller('users')
 export class UsersController {
@@ -20,5 +33,40 @@ export class UsersController {
   @Roles(RolesEnum.ADMIN)
   public async getAllUsers() {
     return await this.usersService.getAllUsers();
+  }
+
+  @Get('follow/me')
+  public async getFollowers(
+    @User() user: UsersModel,
+    @Query('includeNotConfirm', new DefaultValuePipe(false), ParseBoolPipe)
+    includeNotConfirm: boolean = false,
+  ) {
+    return await this.usersService.getFollowers(user.id, includeNotConfirm);
+  }
+
+  @Post('follow/:followeeId')
+  public async followUser(
+    @User() user: UsersModel,
+    @Param('followeeId', ParseIntPipe) followeeId: number,
+  ): Promise<boolean> {
+    await this.usersService.followUser(user.id, followeeId);
+
+    return true;
+  }
+
+  @Patch('follow/:followerId/confirm')
+  public async patchConfirmFollowConfirm(
+    @User() user: UsersModel,
+    @Param('followerId', ParseIntPipe) followerId: number,
+  ): Promise<boolean> {
+    return await this.usersService.confirmFollow(followerId, user.id);
+  }
+
+  @Delete('follow/:followeeId')
+  public async deleteFollow(
+    @User() user: UsersModel,
+    @Param('followeeId', ParseIntPipe) followeeId: number,
+  ): Promise<boolean> {
+    return await this.usersService.deleteFollow(user.id, followeeId);
   }
 }
